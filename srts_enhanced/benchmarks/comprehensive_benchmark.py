@@ -326,7 +326,7 @@ class ComprehensiveBenchmark:
         return all_phase_results
     
     def _save_results(self, results: List[Dict], phase_name: str):
-        """Save results to CSV and JSON."""
+        """Save results to JSON."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Save JSON
@@ -338,45 +338,7 @@ class ComprehensiveBenchmark:
             }, f, indent=2)
         print(f"✓ Saved JSON: {json_file}")
         
-        # Save CSV
-        csv_file = self.output_dir / f"{phase_name}_{timestamp}.csv"
-        if results:
-            # Flatten results for CSV
-            flat_rows = []
-            for r in results:
-                row = {
-                    "phase": r.get("phase", ""),
-                    "scheme": r.get("scheme", ""),
-                    "curve": r.get("curve", ""),
-                    "n": r.get("n", 0),
-                    "t": r.get("t", 0),
-                }
-                
-                # Add timing metrics
-                timing = r.get("timing", {})
-                for key, val in timing.items():
-                    row[f"timing_{key}"] = val
-                
-                # Add memory metrics
-                memory = r.get("memory", {})
-                for key, val in memory.items():
-                    row[f"memory_{key}"] = val
-                
-                # Add signature metrics
-                sigs = r.get("signatures", {})
-                for key, val in sigs.items():
-                    row[f"signature_{key}"] = val
-                
-                flat_rows.append(row)
-            
-            if flat_rows:
-                fieldnames = list(flat_rows[0].keys())
-                with open(csv_file, 'w', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(flat_rows)
-                print(f"✓ Saved CSV: {csv_file}")
-    
+       
     def generate_summary_report(self):
         """Generate comprehensive summary report."""
         print("\n" + "="*80)
