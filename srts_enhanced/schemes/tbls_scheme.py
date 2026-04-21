@@ -78,6 +78,7 @@ class TBLS:
             "participant_id": participant_id,
             "signature": self.curve.serialize_point(sigma).hex(),
             "message_hash": hashlib.sha256(message).hexdigest(),
+            "is_G2": True,  # Mark this as G2 point for deserialization
         }
     
     def aggregate(self, partial_sigs: List[Dict], message: bytes,
@@ -103,7 +104,8 @@ class TBLS:
         for psig in partial_sigs:
             pid = psig["participant_id"]
             sig_hex = psig["signature"]
-            sig_point = self.curve.deserialize_point(bytes.fromhex(sig_hex))
+            is_G2 = psig.get("is_G2", False)
+            sig_point = self.curve.deserialize_point(bytes.fromhex(sig_hex), is_G2=is_G2)
             shares_data.append((pid, sig_point))
             sig_points.append(sig_point)
         

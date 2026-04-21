@@ -154,10 +154,22 @@ class BLS12381Curve(CurveInterface):
         return x_bytes + y_bytes
     
     def deserialize_point(self, data: bytes, is_G2: bool = False):
-        from py_ecc.optimized_bls12_381 import FQ
-        x = int.from_bytes(data[:48], 'big')
-        y = int.from_bytes(data[48:96], 'big')
-        return (FQ(x), FQ(y), FQ.one())
+        """Deserialize G1 or G2 point from bytes."""
+        if is_G2:
+            # G2 point has FQ2 coordinates (each is c0 + c1*u where u^2 = non-residue)
+            from py_ecc.optimized_bls12_381 import FQ2, FQ
+            # Each coordinate is 96 bytes (two 48-byte FQ elements)
+            x_c0 = int.from_bytes(data[:48], 'big')
+            x_c1 = int.from_bytes(data[48:96], 'big')
+            y_c0 = int.from_bytes(data[96:144], 'big')
+            y_c1 = int.from_bytes(data[144:192], 'big')
+            return (FQ2((x_c0, x_c1)), FQ2((y_c0, y_c1)), FQ2.one())
+        else:
+            # G1 point has FQ coordinates
+            from py_ecc.optimized_bls12_381 import FQ
+            x = int.from_bytes(data[:48], 'big')
+            y = int.from_bytes(data[48:96], 'big')
+            return (FQ(x), FQ(y), FQ.one())
     
     def get_order(self) -> int:
         return self.order
@@ -280,7 +292,10 @@ class CurveAdapter:
     def serialize_point(self, P) -> bytes:
         return self.curve.serialize_point(P)
     
-    def deserialize_point(self, data: bytes):
+    def deserialize_point(self, data: bytes, is_G2: bool = False):
+        """Deserialize point, with optional G2 support for BLS curves."""
+        if self.curve_name == "bls12-381" and is_G2:
+            return self.curve.deserialize_point(data, is_G2=True)
         return self.curve.deserialize_point(data)
     
     def get_order(self) -> int:
