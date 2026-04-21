@@ -1,39 +1,40 @@
-```
+```gitignore
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-venv/
-.venv/
-.env
-.env.local
-.env.*
+*.py~
+*.py.class
+*.pyc.class
 
 # Testing
 .pytest_cache/
 .coverage
 coverage/
 
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
+# Virtual environments
+venv/
+.venv/
+.env
+.env.local
+*.env
+*.env.*
 
 # Logs
 *.log
 
 # Temporary files
 *.tmp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
 ```
