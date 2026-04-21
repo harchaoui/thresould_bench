@@ -136,8 +136,8 @@ class TestMuSig2(unittest.TestCase):
                 scheme = MuSig2(curve_name=curve_name)
                 message = b"Curve test"
                 
-                # Simple n=2 test
-                key_pairs = [scheme.keygen(i) for i in range(1, 3)]
+                # Simple n=2 test using keygen_single
+                key_pairs = [scheme.keygen_single(i) for i in range(1, 3)]
                 agg_key = scheme.aggregate_keys(key_pairs)
                 nonces = [scheme.generate_nonces(i) for i in range(1, 3)]
                 
@@ -169,8 +169,8 @@ class TestMuSig2(unittest.TestCase):
         message = b"Original message"
         wrong_message = b"Tampered message"
         
-        # Create valid signature
-        key_pairs = [scheme.keygen(i) for i in range(1, 3)]
+        # Create valid signature using keygen_single
+        key_pairs = [scheme.keygen_single(i) for i in range(1, 3)]
         agg_key = scheme.aggregate_keys(key_pairs)
         nonces = [scheme.generate_nonces(i) for i in range(1, 3)]
         

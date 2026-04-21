@@ -5,19 +5,35 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-env/
-venv/
-.venv/
-.venv3/
-.venv312/
-.python-version
-.python-history
-.pythonrc
-.pytest_cache/
-.mypy_cache/
+*.so
 .coverage
 coverage/
+htmlcov/
 
 # Benchmark results
 benchmark_results/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
 ```

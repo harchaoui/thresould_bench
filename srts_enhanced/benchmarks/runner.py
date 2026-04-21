@@ -205,9 +205,9 @@ class BenchmarkRunner:
         
         # Phase 1: Key Generation
         with Timer(metrics, "keygen"):
-            # MuSig2 is n-of-n multi-sig (no threshold), takes only n parameter
+            # MuSig2 is n-of-n multi-sig (no threshold), uses keygen_multi
             if hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2":
-                keys = scheme.keygen(n)
+                keys = scheme.keygen_multi(n)
             else:
                 keys = scheme.keygen(n, t)
         
@@ -230,7 +230,8 @@ class BenchmarkRunner:
         if is_musig2:
             # MuSig2: All n participants must sign
             sign_participants = participants
-            agg_key = keys.get("aggregated_key") or keys.get("public_key")
+            # For MuSig2, use the aggregated_key_obj which has participant_keys attribute
+            agg_key = keys.get("aggregated_key_obj") or keys.get("aggregated_key") or keys.get("public_key")
             
             # Generate nonces for all participants
             nonces = []
@@ -239,14 +240,30 @@ class BenchmarkRunner:
                     nonce = scheme.generate_nonces(pid)
                     nonces.append(nonce)
             
-            # Aggregate public nonces
-            agg_nonces = scheme.aggregate_public_nonces(nonces, agg_key)
+            # Presign phase - compute shared R and challenge
+            presign_data_list = []
+            with Timer(metrics, "presign"):
+                for i in range(len(sign_participants)):
+                    presign_data = scheme.presign(
+                        message=message,
+                        nonces=nonces,
+                        agg_key=agg_key,
+                        participant_index=i
+                    )
+                    presign_data_list.append(presign_data)
             
+            # Sign phase
             with Timer(metrics, "partial_sign"):
                 for i, pid in enumerate(sign_participants):
                     sk = keys["secret_keys"][i]
                     nonce = nonces[i]
-                    psig = scheme.sign(message, sk, nonce, pid, agg_key, agg_nonces, i)
+                    psig = scheme.sign(
+                        message=message,
+                        key_pair=sk,
+                        nonce=nonce,
+                        presign_data=presign_data_list[i],
+                        agg_key=agg_key
+                    )
                     partial_sigs.append(psig)
                     
                     # Simulate network communication

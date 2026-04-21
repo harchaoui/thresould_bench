@@ -87,18 +87,41 @@ class MuSig2:
         digest = h.digest()
         return int.from_bytes(digest, 'big') % self.order
     
-    def keygen(self, n: int = None) -> Dict:
+    def keygen(self, participant_id: int = None) -> Dict:
+        """
+        Generate key pair for a single participant (for backward compatibility).
+        For multiple participants, use keygen_multi().
+        
+        Args:
+            participant_id: ID for this participant (default: 1)
+            
+        Returns:
+            Dictionary with:
+                - secret_key: MuSig2KeyPair object
+                - public_key: Serialized public key
+        """
+        pid = participant_id if participant_id is not None else 1
+        kp = self.keygen_single(pid)
+        
+        return {
+            "secret_key": kp,
+            "public_key": kp.public_key,
+            "key_pair": kp
+        }
+    
+    def keygen_multi(self, n: int) -> Dict:
         """
         Generate key pairs for all n participants (for benchmark compatibility).
         
         Args:
-            n: Number of participants (optional, can be used to generate all at once)
+            n: Number of participants
             
         Returns:
             Dictionary with:
                 - secret_keys: List of MuSig2KeyPair objects
                 - public_keys: List of serialized public keys
                 - aggregated_key: Aggregated public key
+                - key_pairs: List of MuSig2KeyPair objects
         """
         # Generate key pairs for n participants
         key_pairs = []
@@ -114,7 +137,8 @@ class MuSig2:
             "public_keys": [kp.public_key for kp in key_pairs],
             "aggregated_key": agg_key_obj.aggregated_serialized,
             "aggregated_key_point": agg_key_obj.aggregated_point,
-            "key_pairs": key_pairs
+            "key_pairs": key_pairs,
+            "aggregated_key_obj": agg_key_obj
         }
     
     def keygen_single(self, participant_id: int) -> MuSig2KeyPair:
