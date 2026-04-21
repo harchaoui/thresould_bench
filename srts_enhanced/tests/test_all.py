@@ -31,6 +31,7 @@ class TestCurves(unittest.TestCase):
     def test_bls12_381_basic(self):
         """Test BLS12-381 curve operations."""
         from ..curves import get_curve
+        from py_ecc.optimized_bls12_381 import normalize
         
         curve = get_curve("bls12-381")
         
@@ -42,8 +43,14 @@ class TestCurves(unittest.TestCase):
         # BLS points have different internal representation, just check we can serialize/deserialize
         serialized = curve.serialize_point(pk)
         deserialized = curve.deserialize_point(serialized)
-        # Check x coordinates match (y may differ due to projective coords)
-        self.assertEqual(pk[0], deserialized[0])
+        
+        # Normalize the original point to affine coordinates for comparison
+        pk_affine = normalize(pk)
+        
+        # For BLS12-381, coordinates are FQ elements - compare their integer values
+        pk_x = int(pk_affine[0].n) if hasattr(pk_affine[0], 'n') else int(pk_affine[0])
+        deser_x = int(deserialized[0].n) if hasattr(deserialized[0], 'n') else int(deserialized[0])
+        self.assertEqual(pk_x, deser_x)
     
     def test_hash_to_scalar(self):
         """Test hash to scalar conversion."""

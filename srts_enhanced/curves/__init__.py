@@ -141,12 +141,8 @@ class BLS12381Curve(CurveInterface):
         if len(P) == 3:
             # Projective coordinates - convert to affine
             P_affine = normalize(P)
-            # normalize returns (x, y) for affine, we need to handle this
-            if len(P_affine) == 2:
-                # Affine point without z
-                x, y = P_affine
-            else:
-                x, y, _ = P_affine
+            # normalize returns (x, y) for affine (length 2)
+            x, y = P_affine
         else:
             # Already affine (x, y)
             x, y = P
@@ -168,7 +164,7 @@ class BLS12381Curve(CurveInterface):
     
     def deserialize_point(self, data: bytes, is_G2: bool = False):
         """Deserialize G1 or G2 point from bytes."""
-        if is_G2:
+        if is_G2 or len(data) == 192:
             # G2 point has FQ2 coordinates (each is c0 + c1*u where u^2 = non-residue)
             from py_ecc.optimized_bls12_381 import FQ2, FQ
             # Each coordinate is 96 bytes (two 48-byte FQ elements)
@@ -176,7 +172,8 @@ class BLS12381Curve(CurveInterface):
             x_c1 = int.from_bytes(data[48:96], 'big')
             y_c0 = int.from_bytes(data[96:144], 'big')
             y_c1 = int.from_bytes(data[144:192], 'big')
-            return (FQ2((x_c0, x_c1)), FQ2((y_c0, y_c1)), FQ2.one())
+            # IMPORTANT: z must be FQ2([1, 0]) for G2 points, not int or FQ
+            return (FQ2([x_c0, x_c1]), FQ2([y_c0, y_c1]), FQ2([1, 0]))
         else:
             # G1 point has FQ coordinates
             from py_ecc.optimized_bls12_381 import FQ
