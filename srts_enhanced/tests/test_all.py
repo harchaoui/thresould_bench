@@ -164,7 +164,7 @@ class TestSRTS(unittest.TestCase):
         
         # Generate presignatures properly for SRTS
         presign_result = scheme.generate_presignatures(participants, batch_size=1)
-        presign_data = scheme.presignatures[0]
+        presign_data = scheme.presignatures[0].copy()
         presign_data["public_key"] = keys["public_key"]
         presign_data["message"] = message
         
@@ -233,6 +233,7 @@ class TestFROST(unittest.TestCase):
         
         # Presign (Round 1)
         presign_data = scheme.presign(message, participants)
+        presign_data["public_key"] = keys["public_key"]
         
         # Sign (Round 2)
         partial_sigs = []
@@ -297,6 +298,7 @@ class TestIntegration(unittest.TestCase):
                 
                 if hasattr(scheme, 'presign'):
                     presign_data = scheme.presign(message, participants)
+                    presign_data["public_key"] = keys["public_key"]
                 else:
                     presign_data = keys
                 
@@ -306,14 +308,14 @@ class TestIntegration(unittest.TestCase):
                     pid = participants[i]
                     share = keys["shares"][i][1]
                     
-                    if scheme_cls == TBLS:
+                    if hasattr(scheme, 'partial_sign'):
                         psig = scheme.partial_sign(message, share, pid)
                     else:
                         psig = scheme.sign(message, share, pid, presign_data)
                     partial_sigs.append(psig)
                 
                 # Aggregate
-                if scheme_cls == TBLS:
+                if hasattr(scheme, 'partial_sign'):
                     sig = scheme.aggregate(partial_sigs, message, keys["public_key"])
                     valid = sig["valid"]
                 else:
