@@ -130,13 +130,13 @@ class BenchmarkRunner:
         try:
             # Import scheme dynamically
             if scheme_type == SchemeType.SRTS:
-                from ..schemes import SRTS as SchemeClass
+                from srts_enhanced.schemes import SRTS as SchemeClass
             elif scheme_type == SchemeType.FROST:
-                from ..schemes import FROST as SchemeClass
+                from srts_enhanced.schemes import FROST as SchemeClass
             elif scheme_type == SchemeType.TBLS:
-                from ..schemes import TBLS as SchemeClass
+                from srts_enhanced.schemes import TBLS as SchemeClass
             elif scheme_type == SchemeType.MUSIG2:
-                from ..schemes import MuSig2 as SchemeClass
+                from srts_enhanced.schemes import MuSig2 as SchemeClass
             else:
                 raise ValueError(f"Unknown scheme: {scheme_type}")
             

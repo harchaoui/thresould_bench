@@ -339,12 +339,19 @@ def generate_summary_table(df: pd.DataFrame, output_dir: str = "benchmark_result
 
 def main():
     """Main entry point for generating plots."""
+    return main_wrapper()
+
+def main_wrapper(output_dir: str = None):
+    """Wrapper function for programmatic access."""
     print("=" * 60)
     print("📈 SRTS Enhanced - Benchmark Visualization Tool")
     print("=" * 60)
     
     # Find latest CSV
-    csv_path = find_latest_csv()
+    if output_dir:
+        csv_path = find_latest_csv(output_dir)
+    else:
+        csv_path = find_latest_csv()
     print(f"\n📂 Loading data from: {csv_path}")
     
     # Load data
@@ -357,7 +364,7 @@ def main():
     print(f"  Participant counts: {sorted(df['n'].unique().tolist())}")
     
     # Output directory
-    output_dir = Path(os.path.dirname(csv_path))
+    output_path = Path(output_dir) if output_dir else Path(os.path.dirname(csv_path))
     
     print("\n🎨 Generating plots...")
     
@@ -365,27 +372,27 @@ def main():
     plots_generated = []
     
     try:
-        plots_generated.append(plot_signing_latency(df, str(output_dir)))
+        plots_generated.append(plot_signing_latency(df, str(output_path)))
     except Exception as e:
         print(f"⚠ Could not generate signing latency plot: {e}")
     
     try:
-        plots_generated.append(plot_verification_time(df, str(output_dir)))
+        plots_generated.append(plot_verification_time(df, str(output_path)))
     except Exception as e:
         print(f"⚠ Could not generate verification time plot: {e}")
     
     try:
-        plots_generated.append(plot_signature_size(df, str(output_dir)))
+        plots_generated.append(plot_signature_size(df, str(output_path)))
     except Exception as e:
         print(f"⚠ Could not generate signature size plot: {e}")
     
     try:
-        plots_generated.append(plot_keygen_time(df, str(output_dir)))
+        plots_generated.append(plot_keygen_time(df, str(output_path)))
     except Exception as e:
         print(f"⚠ Could not generate keygen time plot: {e}")
     
     try:
-        generate_summary_table(df, str(output_dir))
+        generate_summary_table(df, str(output_path))
     except Exception as e:
         print(f"⚠ Could not generate summary table: {e}")
     
