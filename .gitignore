@@ -4,25 +4,26 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-*.so
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Testing
 .coverage
-coverage/
 htmlcov/
-
-# Benchmark results
-benchmark_results/
-
-# Logs
-*.log
+.pytest_cache/
+.mypy_cache/
 
 # Environment
+.venv/
+venv/
 .env
 .env.local
-.env.*
-!.env.example
+*.env.*
 
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
@@ -32,8 +33,6 @@ benchmark_results/
 .DS_Store
 Thumbs.db
 
-# Testing
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
+# Logs
+*.log
 ```

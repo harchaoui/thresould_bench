@@ -1,0 +1,224 @@
+{
+  "metadata": {
+    "generated_at": "2026-04-21T19:06:35.743391",
+    "total_configurations": 6
+  },
+  "results": [
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "timing": {
+        "keygen_mean_ms": 11.895102624976062,
+        "keygen_median_ms": 11.793438000040624,
+        "keygen_std_ms": 6.0431872877698884,
+        "keygen_p95_ms": 20.14527299979818,
+        "presign_mean_ms": 29.286926874760866,
+        "presign_median_ms": 29.29483399975652,
+        "presign_std_ms": 5.6199985228648,
+        "presign_p95_ms": 34.83912699994107,
+        "partial_sign_mean_ms": 10.619079875141324,
+        "partial_sign_median_ms": 10.888338000313524,
+        "partial_sign_std_ms": 5.606955071902879,
+        "partial_sign_p95_ms": 16.461312000501493,
+        "aggregate_mean_ms": 19.89622224982668,
+        "aggregate_median_ms": 19.72227850001218,
+        "aggregate_std_ms": 0.6096444789697987,
+        "aggregate_p95_ms": 20.736105999276333,
+        "verify_mean_ms": 9.370609000143304,
+        "verify_median_ms": 8.457084500150813,
+        "verify_std_ms": 5.336743354445042,
+        "verify_p95_ms": 15.347135000411072
+      },
+      "memory": {
+        "keygen_mean_mb": 20.3984375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "timing": {
+        "keygen_mean_ms": 16.413486374744934,
+        "keygen_median_ms": 18.121941499884997,
+        "keygen_std_ms": 5.269165099907909,
+        "keygen_p95_ms": 21.593466000012995,
+        "presign_mean_ms": 49.7477146249139,
+        "presign_median_ms": 49.08410600000934,
+        "presign_std_ms": 7.039286526675804,
+        "presign_p95_ms": 61.632398999790894,
+        "partial_sign_mean_ms": 15.299842500212435,
+        "partial_sign_median_ms": 17.645760000505106,
+        "partial_sign_std_ms": 4.843364428104348,
+        "partial_sign_p95_ms": 18.99181899989344,
+        "aggregate_mean_ms": 29.97824450005737,
+        "aggregate_median_ms": 32.39995000012641,
+        "aggregate_std_ms": 6.488576544720277,
+        "aggregate_p95_ms": 37.51680999994278,
+        "verify_mean_ms": 7.8981143751661875,
+        "verify_median_ms": 4.5009980003669625,
+        "verify_std_ms": 5.87442683600364,
+        "verify_p95_ms": 18.70753200000763
+      },
+      "memory": {
+        "keygen_mean_mb": 20.3984375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 279.875,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 10,
+      "t": 6,
+      "timing": {
+        "keygen_mean_ms": 32.091258750142515,
+        "keygen_median_ms": 35.23552349997772,
+        "keygen_std_ms": 6.3537623789543485,
+        "keygen_p95_ms": 38.34256500067568,
+        "presign_mean_ms": 102.18825275001109,
+        "presign_median_ms": 99.3642614998862,
+        "presign_std_ms": 11.023517816097941,
+        "presign_p95_ms": 119.91226500049379,
+        "partial_sign_mean_ms": 34.7121366249894,
+        "partial_sign_median_ms": 35.236667999924975,
+        "partial_sign_std_ms": 8.988351648592245,
+        "partial_sign_p95_ms": 52.6837470006285,
+        "aggregate_mean_ms": 44.766011500200875,
+        "aggregate_median_ms": 41.680653499952314,
+        "aggregate_std_ms": 6.690507417111236,
+        "aggregate_p95_ms": 58.48387000060029,
+        "verify_mean_ms": 10.41189099987605,
+        "verify_median_ms": 10.109305999776552,
+        "verify_std_ms": 6.262108970160583,
+        "verify_p95_ms": 18.809999999575666
+      },
+      "memory": {
+        "keygen_mean_mb": 20.7890625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.25,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "timing": {
+        "keygen_mean_ms": 14.228268499778096,
+        "keygen_median_ms": 16.298432500207127,
+        "keygen_std_ms": 5.0724177599364,
+        "keygen_p95_ms": 17.97907599939208,
+        "presign_mean_ms": 26.88228425017769,
+        "presign_median_ms": 22.50056150023738,
+        "presign_std_ms": 6.317178851753898,
+        "presign_p95_ms": 35.23819900055969,
+        "partial_sign_mean_ms": 13.935631875142462,
+        "partial_sign_median_ms": 15.443207999851438,
+        "partial_sign_std_ms": 8.55603371064969,
+        "partial_sign_p95_ms": 30.54345700002159,
+        "aggregate_mean_ms": 22.315932375022385,
+        "aggregate_median_ms": 20.564610499604896,
+        "aggregate_std_ms": 4.890586292699085,
+        "aggregate_p95_ms": 34.05872700022883,
+        "verify_mean_ms": 7.577129250080361,
+        "verify_median_ms": 5.183841499729169,
+        "verify_std_ms": 4.971779778489017,
+        "verify_p95_ms": 16.60430800075119
+      },
+      "memory": {
+        "keygen_mean_mb": 20.7890625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258.125,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "timing": {
+        "keygen_mean_ms": 17.446051375031857,
+        "keygen_median_ms": 18.37690050024321,
+        "keygen_std_ms": 3.9263865442358687,
+        "keygen_p95_ms": 20.103316999666276,
+        "presign_mean_ms": 42.584614124848486,
+        "presign_median_ms": 40.976674999910756,
+        "presign_std_ms": 5.745396093234963,
+        "presign_p95_ms": 56.621968999934325,
+        "partial_sign_mean_ms": 17.31536474994755,
+        "partial_sign_median_ms": 18.482842000594246,
+        "partial_sign_std_ms": 3.77305072856544,
+        "partial_sign_p95_ms": 19.49275700008002,
+        "aggregate_mean_ms": 25.928875625027104,
+        "aggregate_median_ms": 22.654081999917253,
+        "aggregate_std_ms": 6.314822377723465,
+        "aggregate_p95_ms": 38.091839000117034,
+        "verify_mean_ms": 11.371893750037998,
+        "verify_median_ms": 14.503213999887521,
+        "verify_std_ms": 5.81278883308646,
+        "verify_p95_ms": 17.121061000580085
+      },
+      "memory": {
+        "keygen_mean_mb": 20.7890625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258.125,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 10,
+      "t": 6,
+      "timing": {
+        "keygen_mean_ms": 33.74355062499035,
+        "keygen_median_ms": 35.16709299992726,
+        "keygen_std_ms": 5.432529935239154,
+        "keygen_p95_ms": 39.52317899984337,
+        "presign_mean_ms": 88.44517174986777,
+        "presign_median_ms": 84.54716649976035,
+        "presign_std_ms": 8.48817739180426,
+        "presign_p95_ms": 105.73417299929133,
+        "partial_sign_mean_ms": 37.00609512486608,
+        "partial_sign_median_ms": 37.15293799996289,
+        "partial_sign_std_ms": 8.698669525890615,
+        "partial_sign_p95_ms": 54.87015699964104,
+        "aggregate_mean_ms": 43.58191700009684,
+        "aggregate_median_ms": 40.4697919998398,
+        "aggregate_std_ms": 12.725287742598619,
+        "aggregate_p95_ms": 72.86683900019852,
+        "verify_mean_ms": 9.873038125078892,
+        "verify_median_ms": 9.53167450006731,
+        "verify_std_ms": 5.818760673214132,
+        "verify_p95_ms": 16.012525999940408
+      },
+      "memory": {
+        "keygen_mean_mb": 20.7890625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258.25,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    }
+  ]
+}

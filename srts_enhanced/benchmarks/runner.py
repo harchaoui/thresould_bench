@@ -242,6 +242,7 @@ class BenchmarkRunner:
             
             # Presign phase - compute shared R and challenge
             presign_data_list = []
+            agg_nonces = []  # Collect aggregated nonces for final aggregation
             with Timer(metrics, "presign"):
                 for i in range(len(sign_participants)):
                     presign_data = scheme.presign(
@@ -251,6 +252,9 @@ class BenchmarkRunner:
                         participant_index=i
                     )
                     presign_data_list.append(presign_data)
+                    # Extract public nonce for aggregation
+                    if 'public_nonce' in presign_data:
+                        agg_nonces.append(presign_data['public_nonce'])
             
             # Sign phase
             with Timer(metrics, "partial_sign"):
@@ -295,7 +299,8 @@ class BenchmarkRunner:
         # Phase 4: Signature Aggregation
         with Timer(metrics, "aggregate"):
             if is_musig2:
-                sig = scheme.aggregate(partial_sigs, agg_nonces, agg_key, message)
+                # MuSig2: Use presign_data_list[0] which contains R_point and R_serialized
+                sig = scheme.aggregate(partial_sigs, presign_data_list[0])
             elif hasattr(scheme, 'aggregate'):
                 if presign_data:
                     sig = scheme.aggregate(partial_sigs, presign_data)
