@@ -10,6 +10,7 @@ This script runs a complete benchmark analysis covering:
 - Network conditions (LAN, WAN, LOSSY, MOBILE, SATELLITE)
 - Scale parameters (n=3 to n=100)
 - Batch operations and stress testing
+- Theoretical property analysis and communication costs
 
 Usage:
     python -m srts_enhanced.benchmarks.comprehensive_benchmark
@@ -38,6 +39,7 @@ from benchmarks.config import (
 from benchmarks.runner import BenchmarkRunner
 from benchmarks.reporter import BenchmarkReporter
 from benchmarks import plot_results
+from benchmarks.scheme_analysis import SchemePropertyAnalyzer
 
 
 class ComprehensiveBenchmark:
@@ -57,6 +59,55 @@ class ComprehensiveBenchmark:
             "phases_completed": []
         }
         
+    def run_phase_0_theoretical_analysis(self):
+        """
+        Phase 0: Theoretical Analysis
+        
+        Generate property comparison matrix, DKG comparison, and communication costs.
+        This is a static analysis phase that doesn't require actual crypto operations.
+        """
+        print("\n" + "="*80)
+        print("PHASE 0: THEORETICAL ANALYSIS")
+        print("="*80)
+        
+        analyzer = SchemePropertyAnalyzer()
+        
+        # Generate property matrix
+        print("\nGenerating scheme property comparison matrix...")
+        property_md = analyzer.generate_property_matrix()
+        print(property_md)
+        
+        # Generate communication cost table
+        print("\nGenerating communication cost analysis...")
+        comm_md = analyzer.generate_communication_table(scales=[5, 10, 20, 50])
+        print(comm_md)
+        
+        # Calculate specific costs for different n,t combinations
+        print("\nDetailed Communication Costs:")
+        print("-" * 80)
+        test_cases = [(5, 3), (10, 6), (20, 11), (50, 26)]
+        
+        header = f"{'(n,t)':<12} {'DKG R1':<15} {'DKG R2':<15} {'Presign':<15} {'Sign':<15} {'Total':<15}"
+        print(header)
+        print("-" * len(header))
+        
+        for n, t in test_cases:
+            costs = analyzer.calculate_communication_costs(n, t)
+            row = (f"({n},{t})".ljust(12) + 
+                   f"{costs['dkg_r1_bytes']:,}".ljust(15) +
+                   f"{costs['dkg_r2_bytes']:,}".ljust(15) +
+                   f"{costs['presign_r1_bytes']:,}".ljust(15) +
+                   f"{costs['sign_broadcast_bytes']:,}".ljust(15) +
+                   f"{costs['total_protocol_bytes']:,}".ljust(15))
+            print(row)
+        
+        # Save comprehensive report
+        report_file = analyzer.save_report(str(self.output_dir))
+        print(f"\n✓ Saved detailed analysis to {report_file}")
+        
+        self.metadata["phases_completed"].append("phase0_theoretical")
+        return [{"phase": "phase0_theoretical", "status": "completed"}]
+    
     def run_phase_1_baseline(self):
         """
         Phase 1: Baseline Performance
@@ -477,6 +528,8 @@ def main():
         benchmark.all_results = results
         benchmark.generate_summary_report()
     else:
+        if args.phase == 0 or args.phase == 0:
+            benchmark.run_phase_0_theoretical_analysis()
         if args.phase == 0 or args.phase == 1:
             benchmark.run_phase_1_baseline()
         if args.phase == 0 or args.phase == 2:
