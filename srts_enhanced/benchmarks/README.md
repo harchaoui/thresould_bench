@@ -5,17 +5,18 @@ Comprehensive benchmarking framework for threshold signature schemes including S
 ## Features
 
 - **Multi-Scheme Support**: Benchmark SRTS, FROST, TBLS, and MuSig2
-- **Multi-Curve Support**: Test across secp256k1, BLS12-381, ristretto255
+- **Multi-Curve Support**: Test across secp256k1, BLS12-381, ristretto255, ed25519, ed448
 - **Scalability Testing**: Evaluate performance from n=3 to n=100+ participants
 - **Network Simulation**: Simulate LAN, WAN, lossy, and mobile network conditions
 - **Comprehensive Metrics**: Timing, memory, communication overhead, signature sizes
 - **Multiple Output Formats**: JSON, CSV, Markdown tables, summary reports
+- **Visualization**: Auto-generate publication-quality plots (PNG/PDF) with matplotlib/seaborn
 
 ## Quick Start
 
 ### Run Quick Benchmark
 ```bash
-cd /workspace/thresould_bench
+cd /workspace
 python -m srts_enhanced.benchmarks.benchmark_main --quick
 ```
 
@@ -23,6 +24,19 @@ python -m srts_enhanced.benchmarks.benchmark_main --quick
 ```bash
 python -m srts_enhanced.benchmarks.benchmark_main --all
 ```
+
+### Generate Visualization Plots
+After running benchmarks, generate plots from the latest CSV data:
+```bash
+python -m srts_enhanced.benchmarks.plot_results
+```
+
+This will create:
+- `signing_latency_*.png/pdf` - Signing Latency vs. Number of Participants
+- `verification_time_*.png/pdf` - Verification Time Comparison
+- `signature_size_*.png/pdf` - Signature Size Bar Chart
+- `keygen_time_*.png/pdf` - Key Generation Time vs. Participants
+- `performance_summary_*.md` - Markdown summary table
 
 ## Usage Examples
 
