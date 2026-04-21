@@ -1,5 +1,5 @@
 """
-Signature schemes: SRTS (Single-Round Threshold Schnorr), FROST, and TBLS.
+Signature schemes: SRTS (Single-Round Threshold Schnorr), FROST, TBLS, and MuSig2.
 """
 
 from abc import ABC, abstractmethod
@@ -33,6 +33,15 @@ class ThresholdScheme(ABC):
     def verify(self, message: bytes, signature: Dict, public_key: Any) -> bool:
         """Verify final signature."""
         pass
+
+
+# Import concrete implementations
+# SRTS, FROST, TBLS are defined in this file (__init__.py)
+from .frost_scheme import FROST
+from .tbls_scheme import TBLS
+from .musig2_scheme import MuSig2
+
+__all__ = ['SRTS', 'FROST', 'TBLS', 'MuSig2']
 
 
 class SRTS(ThresholdScheme):
