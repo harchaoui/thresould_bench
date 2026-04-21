@@ -318,7 +318,11 @@ class BenchmarkRunner:
         # Phase 5: Verification
         with Timer(metrics, "verify"):
             if hasattr(scheme, 'verify'):
-                pk_to_verify = keys.get("aggregated_key") or keys.get("public_key")
+                # For MuSig2, use the aggregated_key_obj which has proper attributes
+                if is_musig2:
+                    pk_to_verify = keys.get("aggregated_key_obj") or keys.get("aggregated_key")
+                else:
+                    pk_to_verify = keys.get("aggregated_key") or keys.get("public_key")
                 valid = scheme.verify(message, sig, pk_to_verify)
                 if not valid:
                     raise ValueError("Signature verification failed!")
