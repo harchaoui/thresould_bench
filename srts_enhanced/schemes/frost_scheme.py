@@ -154,11 +154,44 @@ class FROST:
         Ei = self.curve.deserialize_point(bytes.fromhex(my_nonces_pub["E"]))
         Ri = self.curve.add_points(Di, self.curve.multiply_point(Ei, rho))
         
-        # Compute aggregated R
+        # Get public key
+        pk_hex = presign_data.get("public_key", "")
+        if pk_hex:
+            pk = self.curve.deserialize_point(bytes.fromhex(pk_hex))
+        else:
+            pk = self.G
+        
+        # Compute challenge (will be recomputed during aggregation)
+        c = 0
+        
+        # Store partial z without c*lambda*share term (computed during aggregation)
+        z_partial = (d + rho * e) % self.order
+        
+        return {
+            "participant_id": participant_id,
+            "z": z_partial,
+            "R": self.curve.serialize_point(Ri).hex(),
+            "c": c,
+            "share": share,
+        }
+    
+    def aggregate(self, partial_sigs: List[Dict], presign_data: Dict) -> Dict:
+        """Aggregate partial signatures into final signature."""
+        if len(partial_sigs) == 0:
+            raise ValueError("Need at least one partial signature")
+        
+        all_nonces = presign_data["nonces"]
+        message = presign_data.get("message", b"")
+        
+        # Get the signing subset
+        signing_pids = [psig["participant_id"] for psig in partial_sigs]
+        
+        # Compute aggregated R from all participants' contributions
         R_agg = None
-        for pid, nonce_data in all_nonces.items():
-            pub = nonce_data["public_nonces"][nonce_index]
-            rho_j = self._compute_rho(pid, message, all_nonces, nonce_index)
+        for pid in signing_pids:
+            nonce_data = all_nonces[pid]
+            pub = nonce_data["public_nonces"][0]  # Use first nonce index
+            rho_j = self._compute_rho(pid, message, all_nonces, 0)
             Dj = self.curve.deserialize_point(bytes.fromhex(pub["D"]))
             Ej = self.curve.deserialize_point(bytes.fromhex(pub["E"]))
             Rj = self.curve.add_points(Dj, self.curve.multiply_point(Ej, rho_j))
@@ -169,55 +202,31 @@ class FROST:
         
         # Get public key
         pk_hex = presign_data.get("public_key", "")
-        if pk_hex:
-            pk = self.curve.deserialize_point(bytes.fromhex(pk_hex))
-        else:
-            pk = self.G
-        
-        # Compute challenge
-        c = self._compute_challenge(R_agg, pk, message)
-        
-        # Compute Lagrange coefficient
-        if lagrange_coef is None:
-            from ..utils.polynomial import lagrange_coefficient
-            pids = list(all_nonces.keys())
-            idx = pids.index(participant_id)
-            lagrange_coef = lagrange_coefficient(idx, 0, pids, self.order)
-        
-        # Compute z_i = d_i + rho_i * e_i + c * lambda_i * share_i
-        z = (d + rho * e + c * lagrange_coef * share) % self.order
-        
-        return {
-            "participant_id": participant_id,
-            "z": z,
-            "R": self.curve.serialize_point(Ri).hex(),
-            "c": c,
-        }
-    
-    def aggregate(self, partial_sigs: List[Dict], presign_data: Dict) -> Dict:
-        """Aggregate partial signatures into final signature."""
-        if len(partial_sigs) == 0:
-            raise ValueError("Need at least one partial signature")
-        
-        z_total = sum(psig["z"] for psig in partial_sigs) % self.order
-        
-        R_agg = None
-        for psig in partial_sigs:
-            R_i = self.curve.deserialize_point(bytes.fromhex(psig["R"]))
-            if R_agg is None:
-                R_agg = R_i
-            else:
-                R_agg = self.curve.add_points(R_agg, R_i)
-        
-        pk_hex = presign_data.get("public_key", "")
         if not pk_hex:
             raise ValueError("Public key required")
         pk = self.curve.deserialize_point(bytes.fromhex(pk_hex))
         
-        message = presign_data.get("message", b"")
+        # Compute challenge
         c = self._compute_challenge(R_agg, pk, message)
         
-        # Verify
+        # Sum all z values and add c * lambda_i * share_i for each participant
+        z_total = 0
+        from ..utils.polynomial import lagrange_coefficient
+        
+        for psig in partial_sigs:
+            # Add the nonce part (d + rho*e)
+            z_total = (z_total + psig["z"]) % self.order
+            
+            # Compute Lagrange coefficient using actual participant ID as x-value
+            pid = psig["participant_id"]
+            # Use participant IDs directly for Lagrange interpolation
+            lam = lagrange_coefficient(pid, 0, signing_pids, self.order)
+            
+            # Add c * lambda_i * share_i
+            share = psig["share"]
+            z_total = (z_total + c * lam * share) % self.order
+        
+        # Verify signature equation: g^z == R * PK^c
         lhs = self.curve.multiply_point(self.G, z_total)
         rhs = self.curve.add_points(R_agg, self.curve.multiply_point(pk, c))
         
