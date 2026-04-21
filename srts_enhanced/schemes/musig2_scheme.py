@@ -409,10 +409,15 @@ class MuSig2:
         # Sum all partial signatures: s = sum(s_i)
         s_total = sum(ps.s for ps in partial_sigs) % self.order
         
+        # Create final signature bytes (R || s)
+        sig_bytes = R_serialized + s_total.to_bytes(32, 'little')
+
         return {
             'R': R_serialized,
             'R_point': R_point,
             's': s_total,
+            'serialized': sig_bytes,
+            'aggregated_serialized': sig_bytes,
             'valid': True
         }
     
