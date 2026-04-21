@@ -205,11 +205,17 @@ class BenchmarkRunner:
         
         # Phase 1: Key Generation
         with Timer(metrics, "keygen"):
-            keys = scheme.keygen(n, t)
+            # MuSig2 is n-of-n multi-sig (no threshold), takes only n parameter
+            if hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2":
+                keys = scheme.keygen(n)
+            else:
+                keys = scheme.keygen(n, t)
         
         # Phase 2: Presignature Generation (for SRTS/FROST)
         presign_data = None
-        if hasattr(scheme, 'presign'):
+        is_musig2 = hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2"
+        
+        if hasattr(scheme, 'presign') and not is_musig2:
             with Timer(metrics, "presign"):
                 presign_data = scheme.presign(message, participants)
                 presign_data["public_key"] = keys["public_key"]
@@ -220,31 +226,60 @@ class BenchmarkRunner:
         
         # Phase 3: Partial Signing
         partial_sigs = []
-        sign_participants = participants[:t]  # Use t participants
         
-        with Timer(metrics, "partial_sign"):
-            for i, pid in enumerate(sign_participants):
-                share = keys["shares"][i][1]
-                
-                if hasattr(scheme, 'partial_sign'):
-                    psig = scheme.partial_sign(message, share, pid)
-                else:
-                    # SRTS or MuSig2
-                    if presign_data:
-                        psig = scheme.sign(message, share, pid, presign_data)
+        if is_musig2:
+            # MuSig2: All n participants must sign
+            sign_participants = participants
+            agg_key = keys.get("aggregated_key") or keys.get("public_key")
+            
+            # Generate nonces for all participants
+            nonces = []
+            with Timer(metrics, "nonce_gen"):
+                for pid in sign_participants:
+                    nonce = scheme.generate_nonces(pid)
+                    nonces.append(nonce)
+            
+            # Aggregate public nonces
+            agg_nonces = scheme.aggregate_public_nonces(nonces, agg_key)
+            
+            with Timer(metrics, "partial_sign"):
+                for i, pid in enumerate(sign_participants):
+                    sk = keys["secret_keys"][i]
+                    nonce = nonces[i]
+                    psig = scheme.sign(message, sk, nonce, pid, agg_key, agg_nonces, i)
+                    partial_sigs.append(psig)
+                    
+                    # Simulate network communication
+                    if not is_warmup:
+                        network_sim.send_message(256)
+        else:
+            # Threshold schemes: Use t participants
+            sign_participants = participants[:t]
+            
+            with Timer(metrics, "partial_sign"):
+                for i, pid in enumerate(sign_participants):
+                    share = keys["shares"][i][1]
+                    
+                    if hasattr(scheme, 'partial_sign'):
+                        psig = scheme.partial_sign(message, share, pid)
                     else:
-                        # MuSig2 needs special handling
-                        psig = scheme.sign(message, share, pid, keys)
-                
-                partial_sigs.append(psig)
-                
-                # Simulate network communication
-                if not is_warmup:
-                    network_sim.send_message(256)  # Estimate partial sig size
+                        # SRTS
+                        if presign_data:
+                            psig = scheme.sign(message, share, pid, presign_data)
+                        else:
+                            raise ValueError("Missing presign_data for SRTS signing")
+                    
+                    partial_sigs.append(psig)
+                    
+                    # Simulate network communication
+                    if not is_warmup:
+                        network_sim.send_message(256)
         
         # Phase 4: Signature Aggregation
         with Timer(metrics, "aggregate"):
-            if hasattr(scheme, 'aggregate'):
+            if is_musig2:
+                sig = scheme.aggregate(partial_sigs, agg_nonces, agg_key, message)
+            elif hasattr(scheme, 'aggregate'):
                 if presign_data:
                     sig = scheme.aggregate(partial_sigs, presign_data)
                 else:
@@ -256,7 +291,8 @@ class BenchmarkRunner:
         # Phase 5: Verification
         with Timer(metrics, "verify"):
             if hasattr(scheme, 'verify'):
-                valid = scheme.verify(message, sig, keys["public_key"])
+                pk_to_verify = keys.get("aggregated_key") or keys.get("public_key")
+                valid = scheme.verify(message, sig, pk_to_verify)
                 if not valid:
                     raise ValueError("Signature verification failed!")
         

@@ -57,6 +57,8 @@ class MuSig2:
     Works with any prime-order elliptic curve.
     """
     
+    scheme_name = "MuSig2"  # Class attribute for benchmark detection
+    
     def __init__(self, curve_name: str = "secp256k1"):
         """Initialize MuSig2 with specified curve."""
         from ..curves import get_curve
@@ -85,7 +87,37 @@ class MuSig2:
         digest = h.digest()
         return int.from_bytes(digest, 'big') % self.order
     
-    def keygen(self, participant_id: int) -> MuSig2KeyPair:
+    def keygen(self, n: int = None) -> Dict:
+        """
+        Generate key pairs for all n participants (for benchmark compatibility).
+        
+        Args:
+            n: Number of participants (optional, can be used to generate all at once)
+            
+        Returns:
+            Dictionary with:
+                - secret_keys: List of MuSig2KeyPair objects
+                - public_keys: List of serialized public keys
+                - aggregated_key: Aggregated public key
+        """
+        # Generate key pairs for n participants
+        key_pairs = []
+        for i in range(n):
+            kp = self.keygen_single(i + 1)
+            key_pairs.append(kp)
+        
+        # Aggregate keys
+        agg_key_obj = self.aggregate_keys(key_pairs)
+        
+        return {
+            "secret_keys": key_pairs,
+            "public_keys": [kp.public_key for kp in key_pairs],
+            "aggregated_key": agg_key_obj.aggregated_serialized,
+            "aggregated_key_point": agg_key_obj.aggregated_point,
+            "key_pairs": key_pairs
+        }
+    
+    def keygen_single(self, participant_id: int) -> MuSig2KeyPair:
         """
         Generate individual key pair for a participant.
         
