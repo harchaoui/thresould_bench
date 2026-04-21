@@ -369,13 +369,17 @@ class MuSig2:
         )
     
     def aggregate(self, partial_sigs: List[MuSig2PartialSignature],
-                  presign_data: Dict) -> Dict:
+                  presign_data: Dict = None, agg_nonces: List = None, 
+                  agg_key = None, message: bytes = None) -> Dict:
         """
         Aggregate partial signatures into final signature.
         
         Args:
             partial_sigs: List of partial signatures from all participants
-            presign_data: Data from presign() call
+            presign_data: Data from presign() call (optional if agg_nonces provided)
+            agg_nonces: List of aggregated public nonces (optional)
+            agg_key: Aggregated key object (optional)
+            message: Message that was signed (optional)
             
         Returns:
             Final signature dictionary with (R, s) components
@@ -383,12 +387,27 @@ class MuSig2:
         if len(partial_sigs) == 0:
             raise ValueError("At least one partial signature required")
         
+        # Determine which data source to use
+        if presign_data is not None:
+            # Use presign_data directly
+            R_point = presign_data.get('R_point')
+            R_serialized = presign_data.get('R_serialized')
+        elif agg_nonces is not None and agg_key is not None and message is not None:
+            # Recompute R from agg_nonces if needed
+            # This is for benchmark compatibility
+            if len(agg_nonces) > 0:
+                # Sum the nonces to get R
+                R_point = agg_nonces[0]
+                for nonce in agg_nonces[1:]:
+                    R_point = self.curve.add_points(R_point, nonce)
+                R_serialized = self.curve.serialize_point(R_point)
+            else:
+                raise ValueError("No nonces provided for aggregation")
+        else:
+            raise ValueError("Either presign_data or (agg_nonces, agg_key, message) must be provided")
+        
         # Sum all partial signatures: s = sum(s_i)
         s_total = sum(ps.s for ps in partial_sigs) % self.order
-        
-        # Use the precomputed R from presign phase
-        R_point = presign_data['R_point']
-        R_serialized = presign_data['R_serialized']
         
         return {
             'R': R_serialized,

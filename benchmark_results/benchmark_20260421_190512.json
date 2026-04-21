@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "generated_at": "2026-04-21T19:05:12.582502",
+    "total_configurations": 4
+  },
+  "results": [
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "timing": {
+        "keygen_mean_ms": 18.68425680004293,
+        "keygen_median_ms": 16.114513000502484,
+        "keygen_std_ms": 11.274744730251522,
+        "keygen_p95_ms": 37.609605000398005,
+        "presign_mean_ms": 32.826944399675995,
+        "presign_median_ms": 34.76678599963634,
+        "presign_std_ms": 9.207977474955253,
+        "presign_p95_ms": 44.46952899979806,
+        "partial_sign_mean_ms": 12.198277199968288,
+        "partial_sign_median_ms": 14.92311099991639,
+        "partial_sign_std_ms": 5.471851082656668,
+        "partial_sign_p95_ms": 17.480724999586528,
+        "aggregate_mean_ms": 22.68787720004184,
+        "aggregate_median_ms": 19.784944000093674,
+        "aggregate_std_ms": 6.312763521351011,
+        "aggregate_p95_ms": 33.838184000160254,
+        "verify_mean_ms": 6.378816400138021,
+        "verify_median_ms": 4.387500000120781,
+        "verify_std_ms": 3.5233585556241938,
+        "verify_p95_ms": 12.520725000285893
+      },
+      "memory": {
+        "keygen_mean_mb": 20.30859375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.2,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "timing": {
+        "keygen_mean_ms": 16.402490200016473,
+        "keygen_median_ms": 17.984279999836872,
+        "keygen_std_ms": 4.680948014576693,
+        "keygen_p95_ms": 19.946381999943696,
+        "presign_mean_ms": 46.38352580004721,
+        "presign_median_ms": 43.62811999999394,
+        "presign_std_ms": 4.904064407216904,
+        "presign_p95_ms": 54.199727999730385,
+        "partial_sign_mean_ms": 17.69951799997216,
+        "partial_sign_median_ms": 17.513652000161528,
+        "partial_sign_std_ms": 0.8242430974259427,
+        "partial_sign_p95_ms": 19.07491400015715,
+        "aggregate_mean_ms": 22.131832400191342,
+        "aggregate_median_ms": 21.899002000282053,
+        "aggregate_std_ms": 0.5172178768310385,
+        "aggregate_p95_ms": 23.021181999865803,
+        "verify_mean_ms": 13.458016000186035,
+        "verify_median_ms": 15.615936000358488,
+        "verify_std_ms": 5.035324334338362,
+        "verify_p95_ms": 16.872805000275548
+      },
+      "memory": {
+        "keygen_mean_mb": 20.30859375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.6,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "timing": {
+        "keygen_mean_ms": 13.077728999996907,
+        "keygen_median_ms": 15.915561999463534,
+        "keygen_std_ms": 6.5422285783148,
+        "keygen_p95_ms": 19.43274499990366,
+        "presign_mean_ms": 27.713020199917082,
+        "presign_median_ms": 22.469153000201914,
+        "presign_std_ms": 7.8283273225727426,
+        "presign_p95_ms": 38.526112999534234,
+        "partial_sign_mean_ms": 12.361366000004637,
+        "partial_sign_median_ms": 15.385011000034865,
+        "partial_sign_std_ms": 6.591743718504988,
+        "partial_sign_p95_ms": 20.059626999682223,
+        "aggregate_mean_ms": 19.76154160020087,
+        "aggregate_median_ms": 19.365629000276385,
+        "aggregate_std_ms": 0.6077637331650204,
+        "aggregate_p95_ms": 20.666820000769803,
+        "verify_mean_ms": 10.517829000127676,
+        "verify_median_ms": 14.422606000152882,
+        "verify_std_ms": 5.553504917603439,
+        "verify_p95_ms": 14.764571999876352
+      },
+      "memory": {
+        "keygen_mean_mb": 20.30859375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "timing": {
+        "keygen_mean_ms": 14.488673400046537,
+        "keygen_median_ms": 18.417313999634644,
+        "keygen_std_ms": 5.927811083822601,
+        "keygen_p95_ms": 19.179239000550297,
+        "presign_mean_ms": 43.37563900007808,
+        "presign_median_ms": 42.22730899982707,
+        "presign_std_ms": 4.7189079873955455,
+        "presign_p95_ms": 51.02642200017726,
+        "partial_sign_mean_ms": 14.386010199814336,
+        "partial_sign_median_ms": 18.1875129992477,
+        "partial_sign_std_ms": 5.753280384906037,
+        "partial_sign_p95_ms": 19.312437999360554,
+        "aggregate_mean_ms": 27.895742200053064,
+        "aggregate_median_ms": 21.82360000006156,
+        "aggregate_std_ms": 8.758134458366897,
+        "aggregate_p95_ms": 40.73307500038936,
+        "verify_mean_ms": 12.332480200348073,
+        "verify_median_ms": 14.375386999745388,
+        "verify_std_ms": 4.4585910879972745,
+        "verify_p95_ms": 14.671134000309394
+      },
+      "memory": {
+        "keygen_mean_mb": 20.30859375
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 257.8,
+        "final_sig_avg_verify_ms": 0.0
+      }
+    }
+  ]
+}
