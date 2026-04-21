@@ -167,6 +167,10 @@ class TBLS:
         
         Or equivalently: e(sigma, G1) / e(H(m), pk) == 1
         """
+        # Handle dict input (from aggregate method)
+        if isinstance(signature, dict):
+            signature = signature.get('signature', '')
+        
         # Deserialize if needed
         if isinstance(signature, str):
             # Signature is in G2
