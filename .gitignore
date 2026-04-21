@@ -5,29 +5,30 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-env/
+*.so
+.coverage
+htmlcov/
+.coverage.*
+.python-version
+
+# Virtual environments
 venv/
 .venv/
-.ENV
-.ENV.*
-.venv.bak/
-env.bak/
+env/
+ENV/
 
 # Build artifacts
 build/
 dist/
+*.egg
 *.egg-info/
-.sass-cache/
-.wafpickle-*/
-.coverage
-coverage/
-htmlcov/
+.installed.cfg
+*.egg-info/
 
 # Testing
 .pytest_cache/
+.mypy_cache/
 .hypothesis/
-.tox/
-.nox/
 
 # Logs
 *.log
@@ -47,10 +48,12 @@ Thumbs.db
 .env.*
 !.env.example
 
-# IDE specific
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
+
+# Coverage
+coverage/
 ```

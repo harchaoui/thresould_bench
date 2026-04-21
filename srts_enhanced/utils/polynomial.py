@@ -56,7 +56,7 @@ def lagrange_coefficient(i, x: int, x_values: List[int], order: int) -> int:
     λ_i(x) = ∏_{j≠i} (x - x_j) / (x_i - x_j)
     
     Args:
-        i: Can be either an index (int) or the actual x-value of the participant
+        i: Index in the x_values list (0-based)
         x: Point to evaluate at
         x_values: List of x-values (participant IDs)
         order: Field order
@@ -67,27 +67,11 @@ def lagrange_coefficient(i, x: int, x_values: List[int], order: int) -> int:
     numerator = 1
     denominator = 1
     
-    # Determine if i is an index or an x-value
-    # If i is a valid index AND x_values[i] != i, treat i as an index
-    # Otherwise, treat i as the x-value directly
-    if isinstance(i, int) and 0 <= i < len(x_values):
-        # Check if this looks like an index (sequential from 0) vs x-value
-        # Heuristic: if i < len(x_values) and x_values contains values >= len(x_values), it's likely an index
-        if all(isinstance(v, int) for v in x_values):
-            # If i matches a value in x_values, use it as x-value
-            if i in x_values:
-                xi = i
-            else:
-                # Otherwise treat as index
-                xi = x_values[i]
-        else:
-            xi = i
-    else:
-        # i is definitely an x-value
-        xi = i
+    # i is the index, get the actual x-value
+    xi = x_values[i]
     
-    for xj in x_values:
-        if xi != xj:
+    for j, xj in enumerate(x_values):
+        if i != j:  # j != i means we skip when indices match
             numerator = (numerator * (x - xj)) % order
             denominator = (denominator * (xi - xj)) % order
     

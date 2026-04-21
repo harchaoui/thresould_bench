@@ -134,23 +134,36 @@ class BLS12381Curve(CurveInterface):
         return int.from_bytes(h, 'big') % self.order
     
     def serialize_point(self, P) -> bytes:
-        # BLS12-381 G1 point is (x, y) in FQ - x and y are FQ elements
-        if hasattr(P[0], 'n'):
+        """Serialize G1 or G2 point to bytes."""
+        from py_ecc.optimized_bls12_381 import FQ, FQ2, normalize
+        
+        # Convert to affine coordinates using py_ecc's normalize
+        if len(P) == 3:
+            # Projective coordinates - convert to affine
+            P_affine = normalize(P)
+            # normalize returns (x, y) for affine, we need to handle this
+            if len(P_affine) == 2:
+                # Affine point without z
+                x, y = P_affine
+            else:
+                x, y, _ = P_affine
+        else:
+            # Already affine (x, y)
+            x, y = P
+        
+        if hasattr(x, 'n'):
             # G1 case: FQ elements with .n attribute
-            x_bytes = P[0].n.to_bytes(48, 'big')
-            y_bytes = P[1].n.to_bytes(48, 'big')
-        elif hasattr(P[0], 'coeffs'):
+            x_bytes = x.n.to_bytes(48, 'big')
+            y_bytes = y.n.to_bytes(48, 'big')
+        elif hasattr(x, 'coeffs'):
             # G2 case: FQ2 elements with coeffs tuple
-            # For FQ2, we serialize both coefficients (each is a large int)
-            x_coeffs = P[0].coeffs  # Tuple of two ints for FQ2
-            y_coeffs = P[1].coeffs
-            # Serialize as c0 || c1 for each coordinate
+            x_coeffs = x.coeffs
+            y_coeffs = y.coeffs
             x_bytes = x_coeffs[0].to_bytes(48, 'big') + x_coeffs[1].to_bytes(48, 'big')
             y_bytes = y_coeffs[0].to_bytes(48, 'big') + y_coeffs[1].to_bytes(48, 'big')
         else:
-            # Fallback
-            x_bytes = int(P[0]).to_bytes(48, 'big')
-            y_bytes = int(P[1]).to_bytes(48, 'big')
+            x_bytes = int(x).to_bytes(48, 'big')
+            y_bytes = int(y).to_bytes(48, 'big')
         return x_bytes + y_bytes
     
     def deserialize_point(self, data: bytes, is_G2: bool = False):
