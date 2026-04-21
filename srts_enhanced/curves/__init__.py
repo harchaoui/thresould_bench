@@ -214,14 +214,22 @@ class Ristretto255Curve(CurveInterface):
         return random.randint(1, self.order - 1)
     
     def public_key_from_private(self, sk: int):
-        # Simplified: in practice use proper ristretto255 library
-        # This is a placeholder - real impl would use dalek-cryptography bindings
+        """Generate public key from private scalar."""
         if self.use_cryptography:
             from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-            # Convert sk to proper format
+            # Convert sk to proper 32-byte format
             sk_bytes = sk.to_bytes(32, 'little')
-            private_key = Ed25519PrivateKey.from_private_bytes(sk_bytes[:32])
-            return private_key.public_key().public_bytes_raw()
+            try:
+                private_key = Ed25519PrivateKey.from_private_bytes(sk_bytes)
+                return private_key.public_key().public_bytes_raw()
+            except Exception:
+                # Clamp the scalar for Ed25519 compatibility
+                sk_bytes = bytearray(sk_bytes)
+                sk_bytes[0] &= 248
+                sk_bytes[31] &= 127
+                sk_bytes[31] |= 64
+                private_key = Ed25519PrivateKey.from_private_bytes(bytes(sk_bytes))
+                return private_key.public_key().public_bytes_raw()
         else:
             # Fallback scalar multiplication on edwards curve
             return self._scalar_mult_base(sk)

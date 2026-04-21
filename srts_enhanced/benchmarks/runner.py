@@ -300,7 +300,12 @@ class BenchmarkRunner:
         with Timer(metrics, "aggregate"):
             if is_musig2:
                 # MuSig2: Use presign_data_list[0] which contains R_point and R_serialized
-                sig = scheme.aggregate(partial_sigs, presign_data_list[0])
+                sig_result = scheme.aggregate(partial_sigs, presign_data_list[0])
+                # Extract serialized signature from result dict
+                if isinstance(sig_result, dict):
+                    sig = sig_result.get('aggregated_serialized', sig_result.get('serialized', sig_result))
+                else:
+                    sig = sig_result
             elif hasattr(scheme, 'aggregate'):
                 if presign_data:
                     sig = scheme.aggregate(partial_sigs, presign_data)
