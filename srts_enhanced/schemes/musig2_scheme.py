@@ -421,8 +421,8 @@ class MuSig2:
             'valid': True
         }
     
-    def verify(self, message: bytes, signature: Dict, 
-               aggregated_key: MuSig2AggregatedKey) -> bool:
+    def verify(self, message: bytes, signature, 
+               aggregated_key) -> bool:
         """
         Verify aggregated signature.
         
@@ -431,15 +431,42 @@ class MuSig2:
         
         Args:
             message: Original message
-            signature: Aggregated signature (R, s)
-            aggregated_key: Aggregated public key
+            signature: Aggregated signature (dict or bytes)
+            aggregated_key: Aggregated public key (object or bytes)
             
         Returns:
             True if signature is valid, False otherwise
         """
         try:
-            R_serialized = signature['R']
-            s = signature['s']
+            # Handle different signature formats
+            if isinstance(signature, dict):
+                R_serialized = signature.get('R')
+                s = signature.get('s')
+            elif isinstance(signature, bytes):
+                # Parse bytes: first 33 bytes = R (compressed), next 32 bytes = s
+                if len(signature) < 65:
+                    print(f"Signature too short: {len(signature)} bytes, need 65")
+                    return False
+                R_serialized = signature[:33]
+                s = int.from_bytes(signature[33:65], 'little')
+            else:
+                print(f"Invalid signature type: {type(signature)}")
+                return False
+            
+            if R_serialized is None or s is None:
+                print("Missing R or s in signature")
+                return False
+            
+            # Handle different key formats
+            if hasattr(aggregated_key, 'aggregated_serialized'):
+                pk_serialized = aggregated_key.aggregated_serialized
+                pk_point = aggregated_key.aggregated_point
+            elif isinstance(aggregated_key, bytes):
+                pk_serialized = aggregated_key
+                pk_point = self.curve.deserialize_point(pk_serialized)
+            else:
+                print(f"Invalid key type: {type(aggregated_key)}")
+                return False
             
             # Deserialize R
             R_point = self.curve.deserialize_point(R_serialized)
@@ -448,7 +475,7 @@ class MuSig2:
             e = self._tagged_hash(
                 self.domain_tag + b":challenge",
                 R_serialized,
-                aggregated_key.aggregated_serialized,
+                pk_serialized,
                 message
             )
             
@@ -456,7 +483,7 @@ class MuSig2:
             left = self.curve.multiply_point(self.G, s)
             
             # Compute right side: R + e * PK
-            pk_scaled = self.curve.multiply_point(aggregated_key.aggregated_point, e)
+            pk_scaled = self.curve.multiply_point(pk_point, e)
             right = self.curve.add_points(R_point, pk_scaled)
             
             # Compare points
@@ -467,4 +494,6 @@ class MuSig2:
             
         except Exception as ex:
             print(f"Verification error: {ex}")
+            import traceback
+            traceback.print_exc()
             return False
