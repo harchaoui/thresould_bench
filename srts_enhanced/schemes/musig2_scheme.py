@@ -57,6 +57,8 @@ class MuSig2:
     Works with any prime-order elliptic curve.
     """
     
+    scheme_name = "MuSig2"  # Class attribute for benchmark detection
+    
     def __init__(self, curve_name: str = "secp256k1"):
         """Initialize MuSig2 with specified curve."""
         from ..curves import get_curve
@@ -85,7 +87,61 @@ class MuSig2:
         digest = h.digest()
         return int.from_bytes(digest, 'big') % self.order
     
-    def keygen(self, participant_id: int) -> MuSig2KeyPair:
+    def keygen(self, participant_id: int = None) -> Dict:
+        """
+        Generate key pair for a single participant (for backward compatibility).
+        For multiple participants, use keygen_multi().
+        
+        Args:
+            participant_id: ID for this participant (default: 1)
+            
+        Returns:
+            Dictionary with:
+                - secret_key: MuSig2KeyPair object
+                - public_key: Serialized public key
+        """
+        pid = participant_id if participant_id is not None else 1
+        kp = self.keygen_single(pid)
+        
+        return {
+            "secret_key": kp,
+            "public_key": kp.public_key,
+            "key_pair": kp
+        }
+    
+    def keygen_multi(self, n: int) -> Dict:
+        """
+        Generate key pairs for all n participants (for benchmark compatibility).
+        
+        Args:
+            n: Number of participants
+            
+        Returns:
+            Dictionary with:
+                - secret_keys: List of MuSig2KeyPair objects
+                - public_keys: List of serialized public keys
+                - aggregated_key: Aggregated public key
+                - key_pairs: List of MuSig2KeyPair objects
+        """
+        # Generate key pairs for n participants
+        key_pairs = []
+        for i in range(n):
+            kp = self.keygen_single(i + 1)
+            key_pairs.append(kp)
+        
+        # Aggregate keys
+        agg_key_obj = self.aggregate_keys(key_pairs)
+        
+        return {
+            "secret_keys": key_pairs,
+            "public_keys": [kp.public_key for kp in key_pairs],
+            "aggregated_key": agg_key_obj.aggregated_serialized,
+            "aggregated_key_point": agg_key_obj.aggregated_point,
+            "key_pairs": key_pairs,
+            "aggregated_key_obj": agg_key_obj
+        }
+    
+    def keygen_single(self, participant_id: int) -> MuSig2KeyPair:
         """
         Generate individual key pair for a participant.
         

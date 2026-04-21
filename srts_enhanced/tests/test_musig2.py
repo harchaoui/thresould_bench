@@ -18,7 +18,7 @@ class TestMuSig2(unittest.TestCase):
     def test_musig2_keygen(self):
         """Test individual key generation."""
         scheme = MuSig2(curve_name="secp256k1")
-        keypair = scheme.keygen(participant_id=1)
+        keypair = scheme.keygen_single(participant_id=1)
         
         self.assertEqual(keypair.participant_id, 1)
         self.assertIsNotNone(keypair.secret_key)
@@ -31,7 +31,7 @@ class TestMuSig2(unittest.TestCase):
         n = 3
         
         # Generate key pairs for all participants
-        key_pairs = [scheme.keygen(i) for i in range(1, n + 1)]
+        key_pairs = [scheme.keygen_single(i) for i in range(1, n + 1)]
         
         # Aggregate keys
         agg_key = scheme.aggregate_keys(key_pairs)
@@ -57,7 +57,7 @@ class TestMuSig2(unittest.TestCase):
         message = b"Hello, MuSig2!"
         
         # Single participant
-        key_pair = scheme.keygen(participant_id=1)
+        key_pair = scheme.keygen_single(participant_id=1)
         agg_key = scheme.aggregate_keys([key_pair])
         
         # Generate nonces
@@ -94,7 +94,7 @@ class TestMuSig2(unittest.TestCase):
         n = 3
         
         # Generate key pairs
-        key_pairs = [scheme.keygen(i) for i in range(1, n + 1)]
+        key_pairs = [scheme.keygen_single(i) for i in range(1, n + 1)]
         agg_key = scheme.aggregate_keys(key_pairs)
         
         # Generate nonces for all participants
@@ -136,8 +136,8 @@ class TestMuSig2(unittest.TestCase):
                 scheme = MuSig2(curve_name=curve_name)
                 message = b"Curve test"
                 
-                # Simple n=2 test
-                key_pairs = [scheme.keygen(i) for i in range(1, 3)]
+                # Simple n=2 test using keygen_single
+                key_pairs = [scheme.keygen_single(i) for i in range(1, 3)]
                 agg_key = scheme.aggregate_keys(key_pairs)
                 nonces = [scheme.generate_nonces(i) for i in range(1, 3)]
                 
@@ -169,8 +169,8 @@ class TestMuSig2(unittest.TestCase):
         message = b"Original message"
         wrong_message = b"Tampered message"
         
-        # Create valid signature
-        key_pairs = [scheme.keygen(i) for i in range(1, 3)]
+        # Create valid signature using keygen_single
+        key_pairs = [scheme.keygen_single(i) for i in range(1, 3)]
         agg_key = scheme.aggregate_keys(key_pairs)
         nonces = [scheme.generate_nonces(i) for i in range(1, 3)]
         
@@ -204,7 +204,7 @@ class TestMuSig2(unittest.TestCase):
         message = b"Missing participant test"
         n = 3
         
-        key_pairs = [scheme.keygen(i) for i in range(1, n + 1)]
+        key_pairs = [scheme.keygen_single(i) for i in range(1, n + 1)]
         agg_key = scheme.aggregate_keys(key_pairs)
         nonces = [scheme.generate_nonces(i) for i in range(1, n + 1)]
         

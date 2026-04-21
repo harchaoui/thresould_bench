@@ -1,0 +1,27 @@
+================================================================================
+SRTS ENHANCED - BENCHMARK SUMMARY
+================================================================================
+
+Generated: 2026-04-21 18:41:49
+Total configurations: 4
+
+PERFORMANCE LEADERS:
+----------------------------------------
+Fastest KeyGen:  frost (secp256k1, n=3)
+                 9.64 ms
+
+Fastest Sign:    frost (secp256k1, n=3)
+                 11.38 ms
+
+Fastest Verify:  srts (secp256k1)
+                 6.20 ms
+
+Smallest Sig:    frost (secp256k1)
+                 258 bytes
+
+AVERAGE PERFORMANCE BY SCHEME:
+----------------------------------------
+frost     : KeyGen=  13.66ms, Sign=  15.34ms, Verify=  11.94ms
+srts      : KeyGen=  15.77ms, Sign=  14.67ms, Verify=   7.09ms
+
+================================================================================
