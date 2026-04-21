@@ -212,9 +212,13 @@ class SRTS(ThresholdScheme):
         
         # Bind to message context
         msg_hash = self._tagged_hash("presign_msg", message)
-        result["message_hash"] = msg_hash.hex()
         
-        return result
+        # Return the full presignature data including the presignatures dict
+        presign_batch = self.presignatures[0]  # Get the actual stored batch
+        presign_batch["message_hash"] = msg_hash.hex()
+        presign_batch["message"] = message
+        
+        return presign_batch
     
     def compute_rho(self, participant_id: int, message: bytes,
                     all_public_nonces: Dict, batch_index: int = 0) -> int:

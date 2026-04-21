@@ -169,7 +169,8 @@ class TBLS:
         """
         # Deserialize if needed
         if isinstance(signature, str):
-            sigma = self.curve.deserialize_point(bytes.fromhex(signature))
+            # Signature is in G2
+            sigma = self.curve.deserialize_point(bytes.fromhex(signature), is_G2=True)
         else:
             sigma = signature
         
@@ -182,6 +183,7 @@ class TBLS:
         H = self._hash_to_G2(message)
         
         # Pairing check: e(sigma, G1) == e(H, pk)
+        # sigma is in G2, G1 is in G1
         left = self.curve.pairing(sigma, self.G1)
         right = self.curve.pairing(H, pk)
         

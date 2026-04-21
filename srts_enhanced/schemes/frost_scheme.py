@@ -213,14 +213,17 @@ class FROST:
         z_total = 0
         from ..utils.polynomial import lagrange_coefficient
         
+        # Create mapping from participant_id to their index in signing_pids
+        pid_to_idx = {pid: idx for idx, pid in enumerate(signing_pids)}
+        
         for psig in partial_sigs:
             # Add the nonce part (d + rho*e)
             z_total = (z_total + psig["z"]) % self.order
             
-            # Compute Lagrange coefficient using actual participant ID as x-value
+            # Compute Lagrange coefficient using participant ID
             pid = psig["participant_id"]
-            # Use participant IDs directly for Lagrange interpolation
-            lam = lagrange_coefficient(pid, 0, signing_pids, self.order)
+            idx = pid_to_idx[pid]
+            lam = lagrange_coefficient(idx, 0, signing_pids, self.order)
             
             # Add c * lambda_i * share_i
             share = psig["share"]
