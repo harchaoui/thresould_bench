@@ -57,6 +57,11 @@ class BenchmarkRunner:
                     print(f"\n⊘ Skipping {scheme_type.value} with {curve_type.value} (incompatible)")
                     continue
                 
+                # Skip Schnorr-based schemes (SRTS, FROST, MuSig2) with BLS12-381
+                if scheme_type in [SchemeType.SRTS, SchemeType.FROST, SchemeType.MUSIG2] and curve_type == CurveType.BLS12_381:
+                    print(f"\n⊘ Skipping {scheme_type.value} with {curve_type.value} (incompatible - Schnorr scheme on pairing curve)")
+                    continue
+                
                 # Skip threshold schemes with ristretto255 (not yet fully supported)
                 if scheme_type in [SchemeType.SRTS, SchemeType.FROST] and curve_type == CurveType.RISTRETTO255:
                     print(f"\n⊘ Skipping {scheme_type.value} with {curve_type.value} (limited support)")
