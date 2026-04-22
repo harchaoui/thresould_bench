@@ -43,10 +43,17 @@ class BenchmarkRunner:
         print(f"Scale params: {self.config.scale_params}")
         print(f"Iterations: {self.config.iterations}")
         print(f"Network mode: {self.config.network_mode.value}")
+        if self.config.packet_loss_rate >= 0:
+            print(f"Packet loss rate: {self.config.packet_loss_rate:.2%}")
         print("=" * 80)
         
-        # Create network simulator
-        network_sim = create_simulator_from_preset(self.config.network_mode.value)
+        # Create network simulator with explicit packet loss rate if specified
+        if self.config.packet_loss_rate >= 0:
+            # Override packet loss rate from config
+            network_sim = create_simulator_from_preset(self.config.network_mode.value)
+            network_sim.condition.packet_loss_rate = self.config.packet_loss_rate
+        else:
+            network_sim = create_simulator_from_preset(self.config.network_mode.value)
         
         total_start = time.time()
         
@@ -165,12 +172,14 @@ class BenchmarkRunner:
                 if stress_result.get("success", True):
                     successful_iterations += 1
             
-            # Compile results
+            # Compile results with enhanced schema
             result = {
                 "scheme": scheme_type.value,
                 "curve": curve_type.value,
                 "n": n,
                 "t": t,
+                "network_mode": self.config.network_mode.value,
+                "packet_loss_rate": self.config.packet_loss_rate if self.config.packet_loss_rate >= 0 else network_sim.condition.packet_loss_rate,
                 "timing": {},
                 "memory": {},
                 "communication": {},
@@ -195,7 +204,7 @@ class BenchmarkRunner:
                 result["signatures"][f"{op_name}_avg_size_bytes"] = sig.avg_signature_size
                 result["signatures"][f"{op_name}_avg_verify_ms"] = sig.avg_verification_time
             
-            # Aggregate stress metrics
+            # Aggregate stress metrics with new schema
             if all_stress_metrics:
                 avg_crypto_time = sum(m.get("base_crypto_time_ms", 0) for m in all_stress_metrics) / len(all_stress_metrics)
                 avg_network_time = sum(m.get("network_wait_time_ms", 0) for m in all_stress_metrics) / len(all_stress_metrics)
@@ -206,7 +215,11 @@ class BenchmarkRunner:
                 ideal_messages = n * 2  # Each participant sends ~2 messages
                 bandwidth_inflation = avg_messages / ideal_messages if ideal_messages > 0 else 1.0
                 
+                # Calculate total time including network overhead
+                avg_total_time = avg_crypto_time + avg_network_time
+                
                 result["stress_metrics"] = {
+                    "avg_total_time_ms": round(avg_total_time, 2),
                     "avg_crypto_time_ms": round(avg_crypto_time, 2),
                     "avg_network_overhead_ms": round(avg_network_time, 2),
                     "avg_retries_per_iter": round(avg_retries, 2),

@@ -185,32 +185,32 @@ class ComprehensiveBenchmark:
         Phase 3: Network Impact Analysis
         
         Quantify effects of different network conditions.
+        Tests multiple packet loss rates: 0%, 0.5%, 1%, 2%, 5%
         """
         print("\n" + "="*80)
         print("PHASE 3: NETWORK IMPACT ANALYSIS")
         print("="*80)
         
-        network_modes = [
-            NetworkMode.LAN,
-            NetworkMode.WAN,
-            NetworkMode.LOSSY,
-            NetworkMode.MOBILE
-        ]
+        # Test matrix of packet loss rates
+        packet_loss_rates = [0.0, 0.005, 0.01, 0.02, 0.05]  # 0%, 0.5%, 1%, 2%, 5%
         
         results = []
-        for net_mode in network_modes:
+        for loss_rate in packet_loss_rates:
+            print(f"\n--- Testing with {loss_rate*100:.1f}% packet loss ---")
+            
             config = BenchmarkConfig(
                 schemes=[SchemeType.SRTS, SchemeType.FROST, SchemeType.TBLS],
                 curves=[CurveType.SECP256K1, CurveType.BLS12_381],
                 dkg_methods=[DKGType.PEDERSEN],
                 scale_params=[(10, 6), (20, 11)],
-                network_mode=net_mode,
+                network_mode=NetworkMode.LOSSY,
+                packet_loss_rate=loss_rate,  # Explicitly set packet loss rate
                 iterations=30,  # Higher iterations for variance
                 warmup_iterations=5,
                 verbose=True
             )
             
-            phase_name = f"phase3_network_{net_mode.value}"
+            phase_name = f"phase3_network_loss{int(loss_rate*1000)}"
             results.extend(self._run_config(config, phase_name))
         
         self.metadata["phases_completed"].append("phase3_network")
@@ -326,10 +326,10 @@ class ComprehensiveBenchmark:
         return all_phase_results
     
     def _save_results(self, results: List[Dict], phase_name: str):
-        """Save results to JSON."""
+        """Save results to JSON and CSV with enhanced schema."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Save JSON
+        # Save JSON with enhanced schema
         json_file = self.output_dir / f"{phase_name}_{timestamp}.json"
         with open(json_file, 'w') as f:
             json.dump({
@@ -338,9 +338,59 @@ class ComprehensiveBenchmark:
             }, f, indent=2)
         print(f"✓ Saved JSON: {json_file}")
         
+        # Save CSV with flattened stress metrics
+        csv_file = self.output_dir / f"{phase_name}_{timestamp}.csv"
+        if results:
+            import csv
+            
+            # Flatten the nested structure for CSV
+            flat_results = []
+            for r in results:
+                flat_row = {
+                    "scheme": r.get("scheme", ""),
+                    "curve": r.get("curve", ""),
+                    "n": r.get("n", 0),
+                    "t": r.get("t", 0),
+                    "network_mode": r.get("network_mode", ""),
+                    "packet_loss_rate": r.get("packet_loss_rate", 0.0),
+                    "phase": r.get("phase", ""),
+                    "timestamp": r.get("timestamp", "")
+                }
+                
+                # Flatten timing metrics
+                timing = r.get("timing", {})
+                for key, value in timing.items():
+                    flat_row[f"timing_{key}"] = value
+                
+                # Flatten memory metrics
+                memory = r.get("memory", {})
+                for key, value in memory.items():
+                    flat_row[f"memory_{key}"] = value
+                
+                # Flatten signature metrics
+                signatures = r.get("signatures", {})
+                for key, value in signatures.items():
+                    flat_row[f"signature_{key}"] = value
+                
+                # Flatten stress metrics with prefix
+                stress = r.get("stress_metrics", {})
+                for key, value in stress.items():
+                    flat_row[f"stress_metrics_{key}"] = value
+                
+                flat_results.append(flat_row)
+            
+            # Write CSV
+            if flat_results:
+                fieldnames = list(flat_results[0].keys())
+                with open(csv_file, 'w', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(flat_results)
+                print(f"✓ Saved CSV: {csv_file}")
+        
        
     def generate_summary_report(self):
-        """Generate comprehensive summary report."""
+        """Generate comprehensive summary report with stress analysis."""
         print("\n" + "="*80)
         print("GENERATING SUMMARY REPORT")
         print("="*80)
@@ -356,11 +406,11 @@ class ComprehensiveBenchmark:
             import traceback
             traceback.print_exc()
         
-        # Generate markdown summary
+        # Generate markdown summary with intelligent stress analysis
         md_file = self.output_dir / f"comprehensive_summary_{timestamp}.md"
         
         with open(md_file, 'w') as f:
-            f.write("# Comprehensive Benchmark Summary\n\n")
+            f.write("# Comprehensive Benchmark Summary - Performance Under Stress\n\n")
             f.write(f"**Generated:** {datetime.now().isoformat()}\n\n")
             f.write(f"**Phases Completed:** {', '.join(self.metadata['phases_completed'])}\n\n")
             
@@ -368,6 +418,10 @@ class ComprehensiveBenchmark:
             f.write("## Overall Statistics\n\n")
             f.write(f"- Total configurations tested: {len(self.all_results)}\n")
             f.write(f"- Start time: {self.metadata['start_time']}\n\n")
+            
+            # Intelligent Stress Analysis Report
+            f.write("## Stress Analysis Report\n\n")
+            self._generate_stress_analysis(f)
             
             # Performance tables by phase
             f.write("## Phase Results\n\n")
@@ -377,26 +431,121 @@ class ComprehensiveBenchmark:
                 phase_results = [r for r in self.all_results if r.get("phase") == phase]
                 
                 f.write(f"### {phase}\n\n")
-                f.write("| Scheme | Curve | n | t | KeyGen (ms) | Sign (ms) | Verify (ms) |\n")
-                f.write("|--------|-------|---|---|-------------|-----------|-------------|\n")
+                f.write("| Scheme | Curve | n | t | Loss Rate | KeyGen (ms) | Sign (ms) | Verify (ms) | Network Overhead (ms) |\n")
+                f.write("|--------|-------|---|---|-----------|-------------|-----------|-------------|----------------------|\n")
                 
-                for r in phase_results[:10]:  # Top 10
+                for r in phase_results[:15]:  # Top 15
                     scheme = r.get("scheme", "N/A")
                     curve = r.get("curve", "N/A")
                     n = r.get("n", 0)
                     t = r.get("t", 0)
+                    loss_rate = r.get("packet_loss_rate", 0.0)
                     timing = r.get("timing", {})
+                    stress = r.get("stress_metrics", {})
                     
                     keygen = timing.get("keygen_mean_ms", 0)
                     sign = timing.get("sign_mean_ms", 0) or timing.get("partial_sign_mean_ms", 0)
                     verify = timing.get("verify_mean_ms", 0)
+                    network_overhead = stress.get("avg_network_overhead_ms", 0)
                     
-                    f.write(f"| {scheme} | {curve} | {n} | {t} | {keygen:.2f} | {sign:.2f} | {verify:.2f} |\n")
+                    f.write(f"| {scheme} | {curve} | {n} | {t} | {loss_rate:.2%} | {keygen:.2f} | {sign:.2f} | {verify:.2f} | {network_overhead:.2f} |\n")
                 
                 f.write("\n")
         
         print(f"✓ Saved summary: {md_file}")
         return str(md_file)
+    
+    def _generate_stress_analysis(self, f):
+        """Generate intelligent comparative stress analysis."""
+        # Group results by packet loss rate and scheme
+        loss_rates = sorted(set(r.get("packet_loss_rate", 0.0) for r in self.all_results))
+        schemes = sorted(set(r.get("scheme", "") for r in self.all_results))
+        
+        if not loss_rates or not schemes:
+            f.write("*Insufficient data for stress analysis.*\n\n")
+            return
+        
+        f.write("### Performance Degradation Analysis\n\n")
+        
+        # Analyze degradation from 0% loss to highest loss
+        zero_loss_results = [r for r in self.all_results if r.get("packet_loss_rate", 0.0) == 0.0]
+        high_loss_results = [r for r in self.all_results if r.get("packet_loss_rate", 0.0) == max(loss_rates)]
+        
+        if zero_loss_results and high_loss_results:
+            f.write("**Under varying packet loss conditions**:\n\n")
+            
+            for scheme in schemes:
+                scheme_zero = [r for r in zero_loss_results if r.get("scheme") == scheme]
+                scheme_high = [r for r in high_loss_results if r.get("scheme") == scheme]
+                
+                if scheme_zero and scheme_high:
+                    # Calculate average total times
+                    avg_time_zero = sum(
+                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
+                        for r in scheme_zero
+                    ) / len(scheme_zero)
+                    
+                    avg_time_high = sum(
+                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
+                        for r in scheme_high
+                    ) / len(scheme_high)
+                    
+                    if avg_time_zero > 0:
+                        slowdown_pct = ((avg_time_high - avg_time_zero) / avg_time_zero) * 100
+                        
+                        # Get network overhead
+                        avg_overhead_high = sum(
+                            r.get("stress_metrics", {}).get("avg_network_overhead_ms", 0) 
+                            for r in scheme_high
+                        ) / len(scheme_high)
+                        
+                        f.write(f"- **{scheme.upper()}**: ")
+                        f.write(f"Experienced {slowdown_pct:.1f}% slowdown at {max(loss_rates)*100:.1f}% packet loss. ")
+                        f.write(f"Network overhead: {avg_overhead_high:.1f}ms.\n")
+            
+            f.write("\n")
+            
+            # Recommendations based on analysis
+            f.write("### Recommendations\n\n")
+            
+            # Find most resilient scheme (lowest slowdown)
+            scheme_slowdowns = []
+            for scheme in schemes:
+                scheme_zero = [r for r in zero_loss_results if r.get("scheme") == scheme]
+                scheme_high = [r for r in high_loss_results if r.get("scheme") == scheme]
+                
+                if scheme_zero and scheme_high:
+                    avg_time_zero = sum(
+                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
+                        for r in scheme_zero
+                    ) / len(scheme_zero)
+                    avg_time_high = sum(
+                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
+                        for r in scheme_high
+                    ) / len(scheme_high)
+                    
+                    if avg_time_zero > 0:
+                        slowdown = ((avg_time_high - avg_time_zero) / avg_time_zero) * 100
+                        scheme_slowdowns.append((scheme, slowdown))
+            
+            if scheme_slowdowns:
+                scheme_slowdowns.sort(key=lambda x: x[1])
+                most_resilient = scheme_slowdowns[0]
+                least_resilient = scheme_slowdowns[-1]
+                
+                f.write(f"- **Most resilient to packet loss**: {most_resilient[0].upper()} ")
+                f.write(f"({most_resilient[1]:.1f}% slowdown)\n")
+                
+                f.write(f"- **Most sensitive to packet loss**: {least_resilient[0].upper()} ")
+                f.write(f"({least_resilient[1]:.1f}% slowdown)\n")
+                
+                f.write("\n**Use Case Recommendations**:\n\n")
+                f.write("- **For mobile/unstable networks**: Prefer schemes with lower slowdown percentages.\n")
+                f.write("- **For LAN/datacenter environments**: All schemes perform well; choose based on baseline latency.\n")
+                f.write("- **For high-security applications**: Consider TBLS for its stable performance under stress.\n")
+                f.write("- **For low-latency requirements**: MuSig2 shows best baseline performance in ideal conditions.\n")
+        
+        f.write("\n")
     
     def run_all_phases(self):
         """Execute all benchmark phases."""

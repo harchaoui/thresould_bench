@@ -81,6 +81,10 @@ class BenchmarkConfig:
     # Network simulation mode
     network_mode: NetworkMode = NetworkMode.NONE
     
+    # Packet loss rate (overrides network_mode preset if set explicitly)
+    # Use -1 to use network_mode preset, or set 0.0-1.0 for specific rate
+    packet_loss_rate: float = -1.0
+    
     # Number of iterations for statistical significance
     iterations: int = 10
     

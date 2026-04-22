@@ -19,7 +19,12 @@ from pathlib import Path
 
 def find_latest_csv(benchmark_dir: str = "benchmark_results") -> str:
     """Find the most recent benchmark CSV file with the most data (rows)."""
-    csv_files = glob.glob(os.path.join(benchmark_dir, "benchmark_*.csv"))
+    csv_files = glob.glob(os.path.join(benchmark_dir, "*phase*.csv"))
+    
+    # Also check for old format
+    old_format = glob.glob(os.path.join(benchmark_dir, "benchmark_*.csv"))
+    csv_files.extend(old_format)
+    
     if not csv_files:
         raise FileNotFoundError(f"No benchmark CSV files found in {benchmark_dir}")
     
