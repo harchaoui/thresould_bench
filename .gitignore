@@ -1,48 +1,53 @@
-```
-# Benchmark results
-benchmark_results/
-
-# Python cache
+```gitignore
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Logs
-*.log
-
-# Environment files
-.env
-.env.local
-*.env.*
-
-# Coverage reports
+# Testing
 .coverage
 coverage/
 htmlcov/
+.nyc_output/
 
-# IDE files
+# Virtual environments
+venv/
+.venv/
+ENV/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *.tmp
 
-# Build artifacts
-dist/
-build/
-target/
-*.so
-*.dylib
-*.dll
-*.exe
-*.out
+# Logs
+*.log
 
-# Dependencies
-node_modules/
-.venv/
-venv/
-.mypy_cache/
-.pytest_cache/
-.tox/
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# OS
+.DS_Store
+Thumbs.db
 ```

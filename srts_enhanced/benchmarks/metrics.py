@@ -235,14 +235,15 @@ class Timer:
         self.metrics = metrics
         self.operation_name = operation_name
         self.start_time = None
+        self.end_time = None
         
     def __enter__(self):
         self.start_time = time.perf_counter()
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        end_time = time.perf_counter()
-        duration_ms = (end_time - self.start_time) * 1000
+        self.end_time = time.perf_counter()
+        duration_ms = (self.end_time - self.start_time) * 1000
         self.metrics.get_timing(self.operation_name).add(duration_ms)
 
 

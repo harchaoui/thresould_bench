@@ -152,10 +152,18 @@ class BenchmarkRunner:
             
             # Actual benchmark iterations
             print(f"  Running benchmarks ({self.config.iterations} iterations)...")
+            
+            # Collect stress metrics across all iterations
+            all_stress_metrics = []
+            successful_iterations = 0
+            
             for i in range(self.config.iterations):
                 if self.config.verbose and i % 5 == 0:
                     print(f"    Iteration {i+1}/{self.config.iterations}")
-                self._run_single_iteration(scheme, n, t, metrics, network_sim, is_warmup=False)
+                stress_result = self._run_single_iteration(scheme, n, t, metrics, network_sim, is_warmup=False)
+                all_stress_metrics.append(stress_result)
+                if stress_result.get("success", True):
+                    successful_iterations += 1
             
             # Compile results
             result = {
@@ -166,7 +174,8 @@ class BenchmarkRunner:
                 "timing": {},
                 "memory": {},
                 "communication": {},
-                "signatures": {}
+                "signatures": {},
+                "stress_metrics": {}
             }
             
             # Add timing metrics
@@ -186,6 +195,28 @@ class BenchmarkRunner:
                 result["signatures"][f"{op_name}_avg_size_bytes"] = sig.avg_signature_size
                 result["signatures"][f"{op_name}_avg_verify_ms"] = sig.avg_verification_time
             
+            # Aggregate stress metrics
+            if all_stress_metrics:
+                avg_crypto_time = sum(m.get("base_crypto_time_ms", 0) for m in all_stress_metrics) / len(all_stress_metrics)
+                avg_network_time = sum(m.get("network_wait_time_ms", 0) for m in all_stress_metrics) / len(all_stress_metrics)
+                avg_retries = sum(m.get("retry_count", 0) for m in all_stress_metrics) / len(all_stress_metrics)
+                avg_messages = sum(m.get("total_messages_sent", 0) for m in all_stress_metrics) / len(all_stress_metrics)
+                
+                # Calculate ideal messages (based on protocol - simplified estimate)
+                ideal_messages = n * 2  # Each participant sends ~2 messages
+                bandwidth_inflation = avg_messages / ideal_messages if ideal_messages > 0 else 1.0
+                
+                result["stress_metrics"] = {
+                    "avg_crypto_time_ms": round(avg_crypto_time, 2),
+                    "avg_network_overhead_ms": round(avg_network_time, 2),
+                    "avg_retries_per_iter": round(avg_retries, 2),
+                    "avg_messages_per_iter": round(avg_messages, 2),
+                    "bandwidth_inflation_factor": round(bandwidth_inflation, 2),
+                    "completion_rate": round(successful_iterations / self.config.iterations, 2),
+                    "successful_iterations": successful_iterations,
+                    "total_iterations": self.config.iterations
+                }
+            
             return result
             
         except Exception as e:
@@ -202,19 +233,30 @@ class BenchmarkRunner:
         metrics: BenchmarkMetrics,
         network_sim: NetworkSimulator,
         is_warmup: bool = False
-    ):
+    ) -> Dict[str, Any]:
         """Run a single benchmark iteration."""
         
         message = b"Benchmark test message for performance evaluation"
         participants = list(range(1, n + 1))
         
+        # Track stress metrics for this iteration
+        stress_metrics = {
+            "base_crypto_time_ms": 0.0,
+            "network_wait_time_ms": 0.0,
+            "retry_count": 0,
+            "total_messages_sent": 0,
+            "success": True
+        }
+        
         # Phase 1: Key Generation
-        with Timer(metrics, "keygen"):
+        with Timer(metrics, "keygen") as keygen_timer:
             # MuSig2 is n-of-n multi-sig (no threshold), uses keygen_multi
             if hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2":
                 keys = scheme.keygen_multi(n)
             else:
                 keys = scheme.keygen(n, t)
+        
+        stress_metrics["base_crypto_time_ms"] += (keygen_timer.end_time - keygen_timer.start_time) * 1000 if hasattr(keygen_timer, 'end_time') else 0
         
         # Phase 2: Presignature Generation (for SRTS/FROST)
         presign_data = None
@@ -225,9 +267,14 @@ class BenchmarkRunner:
                 presign_data = scheme.presign(message, participants)
                 presign_data["public_key"] = keys["public_key"]
                 
-                # Simulate network communication
+                # Simulate network communication with retry logic
                 if not is_warmup:
-                    network_sim.send_message(1024)  # Estimate presign data size
+                    result = network_sim.send_with_retry(1024, max_retries=3)
+                    stress_metrics["network_wait_time_ms"] += result["delay"]
+                    stress_metrics["retry_count"] += result["retries"]
+                    stress_metrics["total_messages_sent"] += 1 + result["retries"]
+                    if not result["success"]:
+                        stress_metrics["success"] = False
         
         # Phase 3: Partial Signing
         partial_sigs = []
@@ -275,9 +322,14 @@ class BenchmarkRunner:
                     )
                     partial_sigs.append(psig)
                     
-                    # Simulate network communication
+                    # Simulate network communication with retry
                     if not is_warmup:
-                        network_sim.send_message(256)
+                        result = network_sim.send_with_retry(256, max_retries=3)
+                        stress_metrics["network_wait_time_ms"] += result["delay"]
+                        stress_metrics["retry_count"] += result["retries"]
+                        stress_metrics["total_messages_sent"] += 1 + result["retries"]
+                        if not result["success"]:
+                            stress_metrics["success"] = False
         else:
             # Threshold schemes: Use t participants
             sign_participants = participants[:t]
@@ -297,9 +349,14 @@ class BenchmarkRunner:
                     
                     partial_sigs.append(psig)
                     
-                    # Simulate network communication
+                    # Simulate network communication with retry
                     if not is_warmup:
-                        network_sim.send_message(256)
+                        result = network_sim.send_with_retry(256, max_retries=3)
+                        stress_metrics["network_wait_time_ms"] += result["delay"]
+                        stress_metrics["retry_count"] += result["retries"]
+                        stress_metrics["total_messages_sent"] += 1 + result["retries"]
+                        if not result["success"]:
+                            stress_metrics["success"] = False
         
         # Phase 4: Signature Aggregation
         with Timer(metrics, "aggregate"):
@@ -346,3 +403,5 @@ class BenchmarkRunner:
         if self.config.enable_memory_profiling and not is_warmup:
             mem_mb = get_memory_usage_mb()
             metrics.get_memory("keygen").add(mem_mb)
+        
+        return stress_metrics
