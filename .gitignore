@@ -1,1 +1,7 @@
-Nothing needs to be added to .gitignore since the changes only include markdown documentation files (.md) which are source/config files and should not be ignored.
+Nothing needs to be added to .gitignore since the changes only include markdown documentation files (.md) which are source/config files and should not be ignored.__pycache__/
+*.pyc
+benchmark_final.log
+benchmark_results/
+srts_enhanced/benchmarks/benchmark_results/
+__pycache__/
+*.pyc
