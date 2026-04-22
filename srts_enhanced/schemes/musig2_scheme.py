@@ -443,12 +443,22 @@ class MuSig2:
                 R_serialized = signature.get('R')
                 s = signature.get('s')
             elif isinstance(signature, bytes):
-                # Parse bytes: first 33 bytes = R (compressed), next 32 bytes = s
-                if len(signature) < 65:
-                    print(f"Signature too short: {len(signature)} bytes, need 65")
+                # Parse bytes: R (curve-dependent size) + s (32 bytes)
+                # ristretto255: 32 bytes for R, secp256k1: 33 bytes for R (compressed)
+                if len(signature) < 64:
+                    print(f"Signature too short: {len(signature)} bytes, need at least 64")
                     return False
-                R_serialized = signature[:33]
-                s = int.from_bytes(signature[33:65], 'little')
+                # Determine R size based on signature length
+                # ristretto255: 32 + 32 = 64 bytes, secp256k1: 33 + 32 = 65 bytes
+                if len(signature) == 64:
+                    R_size = 32  # ristretto255
+                elif len(signature) >= 65:
+                    R_size = 33  # secp256k1 or other compressed format
+                else:
+                    print(f"Invalid signature length: {len(signature)}")
+                    return False
+                R_serialized = signature[:R_size]
+                s = int.from_bytes(signature[R_size:R_size+32], 'little')
             else:
                 print(f"Invalid signature type: {type(signature)}")
                 return False
