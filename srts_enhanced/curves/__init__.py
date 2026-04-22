@@ -195,17 +195,38 @@ class BLS12381Curve(CurveInterface):
 
 
 class Ristretto255Curve(CurveInterface):
-    """Ristretto255 curve implementation using cryptography or naive approach."""
+    """Ristretto255 curve implementation using PyNaCl."""
     
     def __init__(self):
-        # Using ed25519 as base, with ristretto encoding
+        # Using PyNaCl for proper ristretto255 support
         try:
-            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-            self.use_cryptography = True
+            from nacl.bindings import (
+                crypto_core_ed25519_scalar_add,
+                crypto_core_ed25519_scalar_sub,
+                crypto_core_ed25519_scalar_mul,
+                crypto_core_ed25519_scalar_invert,
+                crypto_core_ed25519_scalar_negate,
+                crypto_scalarmult_ed25519_base_noclamp,
+                crypto_scalarmult_ed25519_noclamp,
+                crypto_core_ed25519_is_valid_point,
+                crypto_core_ed25519_add,
+                crypto_core_ed25519_sub,
+            )
+            self.crypto_core_ed25519_scalar_add = crypto_core_ed25519_scalar_add
+            self.crypto_core_ed25519_scalar_sub = crypto_core_ed25519_scalar_sub
+            self.crypto_core_ed25519_scalar_mul = crypto_core_ed25519_scalar_mul
+            self.crypto_core_ed25519_scalar_invert = crypto_core_ed25519_scalar_invert
+            self.crypto_core_ed25519_scalar_negate = crypto_core_ed25519_scalar_negate
+            self.crypto_scalarmult_ed25519_base_noclamp = crypto_scalarmult_ed25519_base_noclamp
+            self.crypto_scalarmult_ed25519_noclamp = crypto_scalarmult_ed25519_noclamp
+            self.crypto_core_ed25519_is_valid_point = crypto_core_ed25519_is_valid_point
+            self.crypto_core_ed25519_add = crypto_core_ed25519_add
+            self.crypto_core_ed25519_sub = crypto_core_ed25519_sub
+            self.use_pynacl = True
         except ImportError:
-            self.use_cryptography = False
-        # For ristretto, we'll use a simplified model based on ed25519
-        # Order of ed25519 subgroup
+            self.use_pynacl = False
+        
+        # Order of ed25519 subgroup (ristretto255 uses this)
         self.order = 2**252 + 27742317777372353535851937790883648493
         self.p = 2**255 - 19
     
@@ -214,65 +235,69 @@ class Ristretto255Curve(CurveInterface):
         return random.randint(1, self.order - 1)
     
     def public_key_from_private(self, sk: int):
-        """Generate public key from private scalar."""
-        if self.use_cryptography:
-            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-            # Convert sk to proper 32-byte format
+        """Generate public key from private scalar using ristretto255."""
+        if self.use_pynacl:
+            # Convert scalar to 32-byte little-endian format
             sk_bytes = sk.to_bytes(32, 'little')
-            try:
-                private_key = Ed25519PrivateKey.from_private_bytes(sk_bytes)
-                return private_key.public_key().public_bytes_raw()
-            except Exception:
-                # Clamp the scalar for Ed25519 compatibility
-                sk_bytes = bytearray(sk_bytes)
-                sk_bytes[0] &= 248
-                sk_bytes[31] &= 127
-                sk_bytes[31] |= 64
-                private_key = Ed25519PrivateKey.from_private_bytes(bytes(sk_bytes))
-                return private_key.public_key().public_bytes_raw()
+            # Use no-clamp scalar multiplication for proper group operation
+            pk_bytes = self.crypto_scalarmult_ed25519_base_noclamp(sk_bytes)
+            return pk_bytes
         else:
-            # Fallback scalar multiplication on edwards curve
-            return self._scalar_mult_base(sk)
-    
-    def _scalar_mult_base(self, sk: int):
-        """Simplified scalar multiplication on edwards curve."""
-        # This is a simplified placeholder
-        x, y = 1, 1  # Would need proper edwards arithmetic
-        return (x, y)
+            # Fallback: return bytes placeholder
+            raise RuntimeError("PyNaCl required for ristretto255 operations")
     
     def add_points(self, P, Q):
-        # Simplified point addition
-        if isinstance(P, bytes) and isinstance(Q, bytes):
-            # Would need proper ristretto addition
-            return P  # Placeholder
-        return (P[0] + Q[0], P[1] + Q[1])
+        """Add two ristretto255 points."""
+        if self.use_pynacl:
+            # P and Q are 32-byte compressed ristretto points
+            return self.crypto_core_ed25519_add(P, Q)
+        else:
+            raise RuntimeError("PyNaCl required for ristretto255 operations")
     
     def multiply_point(self, P, scalar: int):
-        # Simplified scalar multiplication
-        if isinstance(P, bytes):
-            return P  # Placeholder
-        return (P[0] * scalar, P[1] * scalar)
+        """Multiply a ristretto255 point by a scalar."""
+        if self.use_pynacl:
+            # P is a 32-byte compressed point, scalar must be reduced mod order
+            scalar_reduced = scalar % self.order
+            scalar_bytes = scalar_reduced.to_bytes(32, 'little')
+            return self.crypto_scalarmult_ed25519_noclamp(scalar_bytes, P)
+        else:
+            raise RuntimeError("PyNaCl required for ristretto255 operations")
     
     def hash_to_scalar(self, data: bytes) -> int:
         h = hashlib.sha512(data).digest()
         return int.from_bytes(h[:32], 'little') % self.order
     
     def serialize_point(self, P) -> bytes:
+        """Serialize a ristretto255 point to 32 bytes."""
         if isinstance(P, bytes):
-            return P
-        return P[0].to_bytes(32, 'little') + P[1].to_bytes(32, 'little')
+            if len(P) == 32:
+                return P
+            raise ValueError(f"Expected 32-byte ristretto point, got {len(P)} bytes")
+        # If it's not bytes, it's an error - ristretto points should always be bytes
+        raise TypeError(f"Ristretto point must be 32 bytes, got {type(P)}")
     
     def deserialize_point(self, data: bytes):
-        x = int.from_bytes(data[:32], 'little')
-        y = int.from_bytes(data[32:64], 'little')
-        return (x, y)
+        """Deserialize a 32-byte ristretto255 point."""
+        if len(data) != 32:
+            raise ValueError(f"Expected 32 bytes for ristretto255 point, got {len(data)}")
+        if self.use_pynacl:
+            # Validate the point
+            if not self.crypto_core_ed25519_is_valid_point(data):
+                raise ValueError("Invalid ristretto255 point")
+        return data
     
     def get_order(self) -> int:
         return self.order
     
     def get_generator(self):
-        # Base point for ed25519/ristretto255
-        return (0, 1)  # Simplified placeholder
+        """Get the generator point of ristretto255 (base point)."""
+        if self.use_pynacl:
+            # Generator is 1 * base point
+            one_bytes = (1).to_bytes(32, 'little')
+            return self.crypto_scalarmult_ed25519_base_noclamp(one_bytes)
+        else:
+            raise RuntimeError("PyNaCl required for ristretto255 operations")
 
 
 # Registry of available curves
