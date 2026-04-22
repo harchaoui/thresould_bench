@@ -227,6 +227,219 @@ def plot_signature_size(df: pd.DataFrame, output_dir: str = "benchmark_results")
     return None
 
 
+def plot_overhead_stack(df: pd.DataFrame, output_dir: str = "benchmark_results"):
+    """Plot Overhead Stack Bar Chart - Crypto Time vs Network Overhead."""
+    plt.style.use('seaborn-v0_8-whitegrid')
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    scheme_colors = {
+        'srts': '#2E86AB',
+        'frost': '#A23B72', 
+        'musig2': '#F18F01',
+        'tbls': '#C73E1D'
+    }
+    
+    # Group by scheme and get stress metrics
+    if 'stress_metrics_avg_crypto_time_ms' not in df.columns or 'stress_metrics_avg_network_overhead_ms' not in df.columns:
+        print("⚠ Stress metrics not available for overhead stack plot")
+        return None
+    
+    grouped = df.groupby(['scheme', 'curve'])
+    
+    schemes_plot = []
+    crypto_times = []
+    network_times = []
+    
+    for (scheme, curve), group in grouped:
+        avg_crypto = group['stress_metrics_avg_crypto_time_ms'].mean()
+        avg_network = group['stress_metrics_avg_network_overhead_ms'].mean()
+        
+        if avg_crypto > 0 or avg_network > 0:
+            label = f"{scheme.upper()} ({curve})"
+            schemes_plot.append(label)
+            crypto_times.append(avg_crypto)
+            network_times.append(avg_network)
+    
+    if not schemes_plot:
+        print("⚠ No data available for overhead stack plot")
+        return None
+    
+    x_pos = range(len(schemes_plot))
+    
+    # Create stacked bar chart
+    bars_crypto = ax.bar(x_pos, crypto_times, label='Crypto Time', 
+                         color='#2E86AB', alpha=0.9, edgecolor='black', linewidth=1.5)
+    bars_network = ax.bar(x_pos, network_times, bottom=crypto_times, 
+                          label='Network Overhead (Retries)', 
+                          color='#FF6B6B', alpha=0.9, edgecolor='black', linewidth=1.5)
+    
+    ax.set_xlabel('Scheme (Curve)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Time (ms)', fontsize=14, fontweight='bold')
+    ax.set_title('Performance Under Stress: Crypto Time vs Network Overhead\\n(Shows which schemes suffer most from network jitter)', 
+                 fontsize=16, fontweight='bold', pad=20)
+    
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(schemes_plot, rotation=45, ha='right', fontsize=10)
+    ax.legend(fontsize=12, loc='upper left', framealpha=0.9)
+    ax.grid(True, alpha=0.3, axis='y')
+    
+    # Add value labels on bars
+    for i, (crypto, network) in enumerate(zip(crypto_times, network_times)):
+        total = crypto + network
+        ax.text(i, crypto / 2, f'{crypto:.1f}', ha='center', va='center', 
+                fontsize=9, fontweight='bold', color='white')
+        if network > 0:
+            ax.text(i, crypto + network / 2, f'{network:.1f}', ha='center', va='center', 
+                    fontsize=9, fontweight='bold', color='white')
+    
+    plt.tight_layout()
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = os.path.join(output_dir, f"overhead_stack_{timestamp}.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {output_path}")
+    
+    pdf_path = os.path.join(output_dir, f"overhead_stack_{timestamp}.pdf")
+    plt.savefig(pdf_path, bbox_inches='tight')
+    print(f"✓ Saved: {pdf_path}")
+    
+    plt.close()
+    return output_path
+
+
+def plot_degradation_curve(df: pd.DataFrame, output_dir: str = "benchmark_results"):
+    """Plot Degradation Curve - Performance vs Packet Loss Rate."""
+    plt.style.use('seaborn-v0_8-whitegrid')
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    scheme_colors = {
+        'srts': '#2E86AB',
+        'frost': '#A23B72', 
+        'musig2': '#F18F01',
+        'tbls': '#C73E1D'
+    }
+    
+    markers = {'srts': 'o', 'frost': 's', 'musig2': '^', 'tbls': 'D'}
+    
+    # Check if we have packet_loss_rate column (from comprehensive benchmark with multiple loss rates)
+    if 'packet_loss_rate' not in df.columns:
+        # Try to infer from network_mode
+        if 'network_mode' in df.columns:
+            # Map network modes to approximate loss rates
+            loss_mapping = {
+                'none': 0.0,
+                'lan': 0.0,
+                'wan': 0.0,
+                'lossy': 0.01,
+                'mobile': 0.005
+            }
+            df['packet_loss_rate'] = df['network_mode'].map(loss_mapping).fillna(0.0)
+        else:
+            print("⚠ No packet loss rate data available for degradation curve")
+            return None
+    
+    grouped = df.groupby(['scheme', 'curve'])
+    
+    for (scheme, curve), group in grouped:
+        if 'stress_metrics_avg_network_overhead_ms' not in group.columns:
+            continue
+        
+        label = f"{scheme.upper()} ({curve})"
+        color = scheme_colors.get(scheme, '#333333')
+        marker = markers.get(scheme, 'o')
+        
+        # Group by packet loss rate and calculate mean overhead
+        loss_groups = group.groupby('packet_loss_rate')['stress_metrics_avg_network_overhead_ms'].mean()
+        
+        ax.plot(loss_groups.index * 100, loss_groups.values,  # Convert to percentage
+                marker=marker, linewidth=2.5, markersize=10,
+                label=label, color=color, alpha=0.8)
+    
+    ax.set_xlabel('Packet Loss Rate (%)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Network Overhead (ms)', fontsize=14, fontweight='bold')
+    ax.set_title('Degradation Curve: Network Overhead vs Packet Loss\\n(Shows breaking point where schemes become unusable)', 
+                 fontsize=16, fontweight='bold', pad=20)
+    
+    ax.legend(fontsize=11, loc='upper left', framealpha=0.9)
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = os.path.join(output_dir, f"degradation_curve_{timestamp}.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {output_path}")
+    
+    pdf_path = os.path.join(output_dir, f"degradation_curve_{timestamp}.pdf")
+    plt.savefig(pdf_path, bbox_inches='tight')
+    print(f"✓ Saved: {pdf_path}")
+    
+    plt.close()
+    return output_path
+
+
+def plot_retry_distribution(df: pd.DataFrame, output_dir: str = "benchmark_results"):
+    """Plot Retry Distribution Box Plot."""
+    plt.style.use('seaborn-v0_8-whitegrid')
+    
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    scheme_colors = {
+        'srts': '#2E86AB',
+        'frost': '#A23B72', 
+        'musig2': '#F18F01',
+        'tbls': '#C73E1D'
+    }
+    
+    if 'stress_metrics_avg_retries_per_iter' not in df.columns:
+        print("⚠ Retry metrics not available")
+        return None
+    
+    # Prepare data for box plot
+    plot_data = []
+    labels = []
+    
+    for scheme in df['scheme'].unique():
+        scheme_data = df[df['scheme'] == scheme]['stress_metrics_avg_retries_per_iter']
+        if len(scheme_data) > 0:
+            plot_data.append(scheme_data.values)
+            labels.append(scheme.upper())
+    
+    if not plot_data:
+        print("⚠ No retry data available")
+        return None
+    
+    # Create box plot
+    bp = ax.boxplot(plot_data, labels=labels, patch_artist=True,
+                    boxprops=dict(facecolor='#A8DADC', edgecolor='black', linewidth=1.5),
+                    medianprops=dict(color='red', linewidth=2),
+                    whiskerprops=dict(color='black', linewidth=1.5),
+                    capprops=dict(color='black', linewidth=1.5))
+    
+    ax.set_xlabel('Scheme', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Retries per Iteration', fontsize=14, fontweight='bold')
+    ax.set_title('Retry Distribution by Scheme\\n(Identifies chatty vs robust protocols)', 
+                 fontsize=16, fontweight='bold', pad=20)
+    
+    ax.grid(True, alpha=0.3, axis='y')
+    
+    plt.tight_layout()
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = os.path.join(output_dir, f"retry_distribution_{timestamp}.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {output_path}")
+    
+    pdf_path = os.path.join(output_dir, f"retry_distribution_{timestamp}.pdf")
+    plt.savefig(pdf_path, bbox_inches='tight')
+    print(f"✓ Saved: {pdf_path}")
+    
+    plt.close()
+    return output_path
+
+
 def plot_keygen_time(df: pd.DataFrame, output_dir: str = "benchmark_results"):
     """Plot Key Generation Time vs. Number of Participants."""
     plt.style.use('seaborn-v0_8-whitegrid')
@@ -371,6 +584,7 @@ def main_wrapper(output_dir: str = None):
     # Generate all plots
     plots_generated = []
     
+    # Original plots
     try:
         plots_generated.append(plot_signing_latency(df, str(output_path)))
     except Exception as e:
@@ -390,6 +604,22 @@ def main_wrapper(output_dir: str = None):
         plots_generated.append(plot_keygen_time(df, str(output_path)))
     except Exception as e:
         print(f"⚠ Could not generate keygen time plot: {e}")
+    
+    # New stress analysis plots
+    try:
+        plots_generated.append(plot_overhead_stack(df, str(output_path)))
+    except Exception as e:
+        print(f"⚠ Could not generate overhead stack plot: {e}")
+    
+    try:
+        plots_generated.append(plot_degradation_curve(df, str(output_path)))
+    except Exception as e:
+        print(f"⚠ Could not generate degradation curve plot: {e}")
+    
+    try:
+        plots_generated.append(plot_retry_distribution(df, str(output_path)))
+    except Exception as e:
+        print(f"⚠ Could not generate retry distribution plot: {e}")
     
     try:
         generate_summary_table(df, str(output_path))

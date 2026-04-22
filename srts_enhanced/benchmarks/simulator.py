@@ -5,7 +5,7 @@ Simulates network conditions: latency, packet loss, and bandwidth limits.
 
 import time
 import random
-from typing import Optional
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
 
@@ -25,8 +25,10 @@ class NetworkSimulator:
     Usage:
         simulator = NetworkSimulator(latency_ms=50.0, packet_loss_rate=0.01)
         
-        # Simulate sending a message
-        simulator.send_message(data_size_bytes)
+        # Simulate sending a message - returns status dict instead of raising
+        result = simulator.send_message(data_size_bytes)
+        if not result['success']:
+            # Handle packet loss gracefully
         
         # Simulate receiving a message
         simulator.receive_message(data_size_bytes)
@@ -52,10 +54,11 @@ class NetworkSimulator:
         )
         self.packets_sent = 0
         self.packets_lost = 0
+        self.packets_retried = 0
         self.total_bytes_sent = 0
         self.total_latency_ms = 0.0
         
-    def simulate_delay(self, data_size_bytes: int = 0):
+    def simulate_delay(self, data_size_bytes: int = 0) -> Dict[str, Any]:
         """
         Simulate network delay based on current conditions.
         
@@ -63,12 +66,20 @@ class NetworkSimulator:
             data_size_bytes: Size of data being sent (for bandwidth calculation)
             
         Returns:
-            Actual delay applied in milliseconds
+            Dict with keys:
+                - success (bool): Whether the packet was delivered
+                - delay (float): Actual delay applied in milliseconds
+                - lost (bool): Whether this was a lost packet
         """
+        result = {"success": True, "delay": 0.0, "lost": False}
+        
         # Check for packet loss
         if random.random() < self.condition.packet_loss_rate:
             self.packets_lost += 1
-            raise ConnectionError("Simulated packet loss")
+            self.packets_sent += 1
+            result["success"] = False
+            result["lost"] = True
+            return result
         
         self.packets_sent += 1
         self.total_bytes_sent += data_size_bytes
@@ -93,15 +104,61 @@ class NetworkSimulator:
             time.sleep(total_delay / 1000.0)  # Convert ms to seconds
             self.total_latency_ms += total_delay
         
-        return total_delay
+        result["delay"] = total_delay
+        return result
     
-    def send_message(self, data_size_bytes: int = 0):
+    def send_message(self, data_size_bytes: int = 0) -> Dict[str, Any]:
         """Simulate sending a message with network conditions."""
         return self.simulate_delay(data_size_bytes)
     
-    def receive_message(self, data_size_bytes: int = 0):
+    def receive_message(self, data_size_bytes: int = 0) -> Dict[str, Any]:
         """Simulate receiving a message with network conditions."""
         return self.simulate_delay(data_size_bytes)
+    
+    def send_with_retry(self, data_size_bytes: int = 0, max_retries: int = 3) -> Dict[str, Any]:
+        """
+        Send a message with automatic retry on packet loss.
+        
+        Args:
+            data_size_bytes: Size of data being sent
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            Dict with keys:
+                - success (bool): Whether the packet was eventually delivered
+                - delay (float): Total delay including retries
+                - retries (int): Number of retries needed
+                - lost (bool): Whether any packets were lost during transmission
+        """
+        total_delay = 0.0
+        retries = 0
+        
+        for attempt in range(max_retries + 1):
+            result = self.simulate_delay(data_size_bytes)
+            total_delay += result["delay"]
+            
+            if result["success"]:
+                return {
+                    "success": True,
+                    "delay": total_delay,
+                    "retries": retries,
+                    "lost": retries > 0
+                }
+            
+            # Packet lost, apply exponential backoff before retry
+            if attempt < max_retries:
+                retries += 1
+                self.packets_retried += 1
+                backoff = 0.01 * (2 ** attempt)  # Exponential backoff: 10ms, 20ms, 40ms...
+                time.sleep(backoff)
+        
+        # All retries exhausted
+        return {
+            "success": False,
+            "delay": total_delay,
+            "retries": retries,
+            "lost": True
+        }
     
     def round_trip(self, data_size_bytes: int = 0):
         """Context manager for simulating round-trip communication."""
@@ -112,6 +169,7 @@ class NetworkSimulator:
         return {
             "packets_sent": self.packets_sent,
             "packets_lost": self.packets_lost,
+            "packets_retried": self.packets_retried,
             "packet_loss_rate_actual": (
                 self.packets_lost / self.packets_sent 
                 if self.packets_sent > 0 else 0.0
@@ -128,6 +186,7 @@ class NetworkSimulator:
         """Reset statistics counters."""
         self.packets_sent = 0
         self.packets_lost = 0
+        self.packets_retried = 0
         self.total_bytes_sent = 0
         self.total_latency_ms = 0.0
 
