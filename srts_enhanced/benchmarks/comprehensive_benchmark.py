@@ -27,7 +27,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-import csv
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -38,7 +37,6 @@ from benchmarks.config import (
 )
 from benchmarks.runner import BenchmarkRunner
 from benchmarks.reporter import BenchmarkReporter
-from benchmarks import plot_results
 from benchmarks.scheme_analysis import SchemePropertyAnalyzer
 
 
@@ -326,7 +324,7 @@ class ComprehensiveBenchmark:
         return all_phase_results
     
     def _save_results(self, results: List[Dict], phase_name: str):
-        """Save results to JSON and CSV with enhanced schema."""
+        """Save results to JSON with enhanced schema."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Save JSON with enhanced schema
@@ -338,56 +336,6 @@ class ComprehensiveBenchmark:
             }, f, indent=2)
         print(f"✓ Saved JSON: {json_file}")
         
-        # Save CSV with flattened stress metrics
-        csv_file = self.output_dir / f"{phase_name}_{timestamp}.csv"
-        if results:
-            import csv
-            
-            # Flatten the nested structure for CSV
-            flat_results = []
-            for r in results:
-                flat_row = {
-                    "scheme": r.get("scheme", ""),
-                    "curve": r.get("curve", ""),
-                    "n": r.get("n", 0),
-                    "t": r.get("t", 0),
-                    "network_mode": r.get("network_mode", ""),
-                    "packet_loss_rate": r.get("packet_loss_rate", 0.0),
-                    "phase": r.get("phase", ""),
-                    "timestamp": r.get("timestamp", "")
-                }
-                
-                # Flatten timing metrics
-                timing = r.get("timing", {})
-                for key, value in timing.items():
-                    flat_row[f"timing_{key}"] = value
-                
-                # Flatten memory metrics
-                memory = r.get("memory", {})
-                for key, value in memory.items():
-                    flat_row[f"memory_{key}"] = value
-                
-                # Flatten signature metrics
-                signatures = r.get("signatures", {})
-                for key, value in signatures.items():
-                    flat_row[f"signature_{key}"] = value
-                
-                # Flatten stress metrics with prefix
-                stress = r.get("stress_metrics", {})
-                for key, value in stress.items():
-                    flat_row[f"stress_metrics_{key}"] = value
-                
-                flat_results.append(flat_row)
-            
-            # Write CSV
-            if flat_results:
-                fieldnames = list(flat_results[0].keys())
-                with open(csv_file, 'w', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(flat_results)
-                print(f"✓ Saved CSV: {csv_file}")
-        
        
     def generate_summary_report(self):
         """Generate comprehensive summary report with stress analysis."""
@@ -397,14 +345,8 @@ class ComprehensiveBenchmark:
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Generate plots
-        try:
-            plot_files = plot_results.main_wrapper(str(self.output_dir))
-            print(f"✓ Generated plots: {plot_files}")
-        except Exception as e:
-            print(f"⚠ Plot generation failed: {e}")
-            import traceback
-            traceback.print_exc()
+        # Skip plot generation (CSV files are disabled)
+        print(f"ℹ Skipping plot generation: CSV output is disabled")
         
         # Generate markdown summary with intelligent stress analysis
         md_file = self.output_dir / f"comprehensive_summary_{timestamp}.md"
