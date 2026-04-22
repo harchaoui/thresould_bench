@@ -335,58 +335,58 @@ class ComprehensiveBenchmark:
             json.dump({
                 "metadata": self.metadata,
                 "results": results
-            }, f, indent=2)
+            }, f, indent=2, default=str)
         print(f"✓ Saved JSON: {json_file}")
         
-        # Save CSV with flattened stress metrics
-        csv_file = self.output_dir / f"{phase_name}_{timestamp}.csv"
-        if results:
-            import csv
+        # # Save CSV with flattened stress metrics
+        # csv_file = self.output_dir / f"{phase_name}_{timestamp}.csv"
+        # if results:
+        #     import csv
             
-            # Flatten the nested structure for CSV
-            flat_results = []
-            for r in results:
-                flat_row = {
-                    "scheme": r.get("scheme", ""),
-                    "curve": r.get("curve", ""),
-                    "n": r.get("n", 0),
-                    "t": r.get("t", 0),
-                    "network_mode": r.get("network_mode", ""),
-                    "packet_loss_rate": r.get("packet_loss_rate", 0.0),
-                    "phase": r.get("phase", ""),
-                    "timestamp": r.get("timestamp", "")
-                }
+        #     # Flatten the nested structure for CSV
+        #     flat_results = []
+        #     for r in results:
+        #         flat_row = {
+        #             "scheme": r.get("scheme", ""),
+        #             "curve": r.get("curve", ""),
+        #             "n": r.get("n", 0),
+        #             "t": r.get("t", 0),
+        #             "network_mode": r.get("network_mode", ""),
+        #             "packet_loss_rate": r.get("packet_loss_rate", 0.0),
+        #             "phase": r.get("phase", ""),
+        #             "timestamp": r.get("timestamp", "")
+        #         }
                 
-                # Flatten timing metrics
-                timing = r.get("timing", {})
-                for key, value in timing.items():
-                    flat_row[f"timing_{key}"] = value
+        #         # Flatten timing metrics
+        #         timing = r.get("timing", {})
+        #         for key, value in timing.items():
+        #             flat_row[f"timing_{key}"] = value
                 
-                # Flatten memory metrics
-                memory = r.get("memory", {})
-                for key, value in memory.items():
-                    flat_row[f"memory_{key}"] = value
+        #         # Flatten memory metrics
+        #         memory = r.get("memory", {})
+        #         for key, value in memory.items():
+        #             flat_row[f"memory_{key}"] = value
                 
-                # Flatten signature metrics
-                signatures = r.get("signatures", {})
-                for key, value in signatures.items():
-                    flat_row[f"signature_{key}"] = value
+        #         # Flatten signature metrics
+        #         signatures = r.get("signatures", {})
+        #         for key, value in signatures.items():
+        #             flat_row[f"signature_{key}"] = value
                 
-                # Flatten stress metrics with prefix
-                stress = r.get("stress_metrics", {})
-                for key, value in stress.items():
-                    flat_row[f"stress_metrics_{key}"] = value
+        #         # Flatten stress metrics with prefix
+        #         stress = r.get("stress_metrics", {})
+        #         for key, value in stress.items():
+        #             flat_row[f"stress_metrics_{key}"] = value
                 
-                flat_results.append(flat_row)
+        #         flat_results.append(flat_row)
             
-            # Write CSV
-            if flat_results:
-                fieldnames = list(flat_results[0].keys())
-                with open(csv_file, 'w', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(flat_results)
-                print(f"✓ Saved CSV: {csv_file}")
+        #     # Write CSV
+        #     if flat_results:
+        #         fieldnames = list(flat_results[0].keys())
+        #         with open(csv_file, 'w', newline='') as f:
+        #             writer = csv.DictWriter(f, fieldnames=fieldnames)
+        #             writer.writeheader()
+        #             writer.writerows(flat_results)
+        #         print(f"✓ Saved CSV: {csv_file}")
         
        
     def generate_summary_report(self):

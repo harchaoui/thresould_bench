@@ -18,8 +18,8 @@ Complete step-by-step guide from testing to visualization.
 ## 1. Prerequisites
 
 ### System Requirements
-- Python 3.8+
-- pip (Python package manager)
+- python3 3.8+
+- pip (python3 package manager)
 - matplotlib, numpy, pandas (for visualization)
 
 ### Installation
@@ -31,7 +31,7 @@ cd /workspace/srts_enhanced
 pip install cryptography coincurve>=18.0.0 matplotlib numpy pandas
 
 # Verify installation
-python -c "import srts_enhanced; print('Package loaded successfully')"
+python3 -c "import srts_enhanced; print('Package loaded successfully')"
 ```
 
 ### Required Dependencies
@@ -62,20 +62,20 @@ Before running benchmarks, verify that all cryptographic implementations are cor
 cd /workspace/srts_enhanced
 
 # Run comprehensive test suite
-python -m pytest tests/test_all.py -v
+python3 -m pytest tests/test_all.py -v
 
 # OR run directly
-python tests/test_all.py
+python3 tests/test_all.py
 ```
 
 ### 3.2 Run Specific Scheme Tests
 
 ```bash
 # Test MuSig2 specifically
-python tests/test_musig2.py
+python3 tests/test_musig2.py
 
 # Test all schemes via test_all.py
-python tests/test_all.py
+python3 tests/test_all.py
 ```
 
 ### Expected Output
@@ -90,7 +90,7 @@ Tests should verify:
 ### If Tests Fail
 
 1. Check that `coincurve>=18.0.0` is installed
-2. Verify Python version is 3.8+
+2. Verify python3 version is 3.8+
 3. Check error messages for missing dependencies
 
 ---
@@ -105,7 +105,7 @@ Once tests pass, run the comprehensive benchmark suite to collect performance da
 cd /workspace/srts_enhanced/benchmarks
 
 # Run full comprehensive benchmark with default settings
-python comprehensive_benchmark.py
+python3 comprehensive_benchmark.py
 ```
 
 This will:
@@ -147,10 +147,10 @@ The benchmark runs in phases:
 
 ```bash
 # Run only Phase 3 (stress testing)
-python comprehensive_benchmark.py --phase 3
+python3 comprehensive_benchmark.py --phase 3
 
 # Run Phases 1-3 only
-python comprehensive_benchmark.py --phases 1-3
+python3 comprehensive_benchmark.py --phases 1-3
 ```
 
 ### 4.4 Output Files
@@ -251,13 +251,13 @@ The plotting script automatically finds and processes result files:
 cd /workspace/srts_enhanced/benchmarks
 
 # Generate all plots from latest results
-python plot_results.py
+python3 plot_results.py
 
 # Generate plots from specific file
-python plot_results.py --input benchmark_results_20240101_120000.json
+python3 plot_results.py --input benchmark_results_20240101_120000.json
 
 # Generate plots from CSV
-python plot_results.py --input benchmark_results_20240101_120000.csv
+python3 plot_results.py --input benchmark_results_20240101_120000.csv
 ```
 
 ### 6.2 Available Plot Types
@@ -402,16 +402,16 @@ pip install coincurve>=18.0.0
 pip install cryptography coincurve>=18.0.0 matplotlib numpy pandas
 
 # 2. Run tests
-python tests/test_all.py
+python3 tests/test_all.py
 
 # 3. Run benchmarks
-cd benchmarks && python comprehensive_benchmark.py
+cd benchmarks && python3 comprehensive_benchmark.py
 
 # 4. Generate plots
-python plot_results.py
+python3 plot_results.py
 
 # 5. Analyze specific metric
-python -c "
+python3 -c "
 import pandas as pd
 df = pd.read_csv('benchmark_results_latest.csv')
 print(df.groupby('scheme')['metrics_avg_total_time_ms'].mean())
