@@ -99,7 +99,7 @@ class BenchmarkConfig:
     
     # Output formats
     output_formats: List[str] = field(default_factory=lambda: [
-        "json", "csv", "markdown"
+        "json", "markdown"
     ])
     
     # Output directory

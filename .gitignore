@@ -1,7 +1,33 @@
-Nothing needs to be added to .gitignore since the changes only include markdown documentation files (.md) which are source/config files and should not be ignored.__pycache__/
-*.pyc
-benchmark_final.log
-benchmark_results/
-srts_enhanced/benchmarks/benchmark_results/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Benchmark results
+benchmark_results/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Dependencies
+.venv/
+venv/
+pip-log.txt
+pipenv.lock
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

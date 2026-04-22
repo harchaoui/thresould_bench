@@ -2,7 +2,6 @@
 Scheme Property Analysis & Communication Cost Calculator.
 Generates the comparison matrix and theoretical bandwidth estimates.
 """
-import csv
 import os
 from datetime import datetime
 from typing import Dict, List, Any

@@ -1,10 +1,9 @@
 """
 Benchmark Results Reporter
-Generates reports in JSON, CSV, and Markdown formats.
+Generates reports in JSON and Markdown formats.
 """
 
 import json
-import csv
 import os
 from datetime import datetime
 from typing import List, Dict, Any
@@ -28,9 +27,6 @@ class BenchmarkReporter:
         json_path = self.generate_json()
         print(f"  ✓ JSON: {json_path}")
         
-        csv_path = self.generate_csv()
-        print(f"  ✓ CSV: {csv_path}")
-        
         md_path = self.generate_markdown()
         print(f"  ✓ Markdown: {md_path}")
         
@@ -39,7 +35,6 @@ class BenchmarkReporter:
         
         return {
             "json": json_path,
-            "csv": csv_path,
             "markdown": md_path,
             "summary": summary_path
         }
@@ -58,70 +53,6 @@ class BenchmarkReporter:
         
         with open(filepath, 'w') as f:
             json.dump(report, f, indent=2)
-        
-        return filepath
-    
-    def generate_csv(self) -> str:
-        """Generate CSV report with dynamic columns based on actual data."""
-        filepath = os.path.join(self.output_dir, f"benchmark_{self.timestamp}.csv")
-        
-        if not self.results:
-            with open(filepath, 'w') as f:
-                f.write("No results available\n")
-            return filepath
-        
-        # Flatten results for CSV and collect all possible keys
-        rows = []
-        all_keys = set()
-        
-        for result in self.results:
-            row = {
-                "scheme": result["scheme"],
-                "curve": result["curve"],
-                "n": result["n"],
-                "t": result["t"]
-            }
-            
-            # Add timing metrics
-            for key, value in result.get("timing", {}).items():
-                field_name = f"timing_{key}"
-                row[field_name] = value
-                all_keys.add(field_name)
-            
-            # Add memory metrics
-            for key, value in result.get("memory", {}).items():
-                field_name = f"memory_{key}"
-                row[field_name] = value
-                all_keys.add(field_name)
-            
-            # Add signature metrics
-            for key, value in result.get("signatures", {}).items():
-                field_name = f"signature_{key}"
-                row[field_name] = value
-                all_keys.add(field_name)
-            
-            rows.append(row)
-        
-        # Define standard ordering for known keys
-        standard_order = [
-            'scheme', 'curve', 'n', 't',
-            'timing_keygen_mean_ms', 'timing_keygen_std_ms',
-            'timing_sign_mean_ms', 'timing_sign_std_ms',
-            'timing_verify_mean_ms', 'timing_verify_std_ms',
-            'timing_nonce_gen_mean_ms', 'timing_nonce_gen_std_ms',
-            'signature_size_bytes', 'success_rate'
-        ]
-        
-        # Build final fieldnames: standard keys first (if they exist), then extras
-        fieldnames = [k for k in standard_order if k in all_keys or k in ['scheme', 'curve', 'n', 't']]
-        extra_keys = sorted(list(all_keys - set(fieldnames)))
-        fieldnames.extend(extra_keys)
-        
-        # Write CSV
-        with open(filepath, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
         
         return filepath
     
