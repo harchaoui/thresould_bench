@@ -1,51 +1,37 @@
-```gitignore
+```
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+*.pyc
+*.pyo
+*.pyd
+
+# Build artifacts
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-
-# Testing
-.coverage
-coverage/
-htmlcov/
-.nyc_output/
-
-# Virtual environments
-venv/
-.venv/
-ENV/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
 
 # Logs
 *.log
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
