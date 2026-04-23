@@ -1,0 +1,6 @@
+[
+  {"scheme": "srts", "curve": "secp256k1", "n": 50, "t": 26, "loss_rate": 0.0, "keygen_ms": 25.44, "sign_ms": 33.58, "verify_ms": 2.14, "network_overhead_ms": 0.0},
+  {"scheme": "srts", "curve": "secp256k1", "n": 100, "t": 51, "loss_rate": 0.0, "keygen_ms": 51.8, "sign_ms": 65.62, "verify_ms": 2.18, "network_overhead_ms": 0.0},
+  {"scheme": "frost", "curve": "secp256k1", "n": 50, "t": 26, "loss_rate": 0.0, "keygen_ms": 25.2, "sign_ms": 36.69, "verify_ms": 2.12, "network_overhead_ms": 0.0},
+  {"scheme": "frost", "curve": "secp256k1", "n": 100, "t": 51, "loss_rate": 0.0, "keygen_ms": 51.01, "sign_ms": 74.05, "verify_ms": 2.13, "network_overhead_ms": 0.0}
+]

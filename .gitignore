@@ -1,36 +1,53 @@
 ```
-# Benchmark results and visualization outputs
-benchmark_results/
-viz_output/
+# Output directories
+output/
 
-# Python specific
-__pycache__/
+# Compiled and build artifacts
 *.pyc
-*.pyo
-*.pyd
-.Python
-venv/
+__pycache__/
+*.o
+*.obj
+*.out
+
+# Dependencies
 .venv/
+venv/
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
 .env
 .env.local
 *.env.*
 
-# Logs
-*.log
-
-# Coverage
-.coverage
-coverage/
-htmlcov/
-
-# IDE
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
 
-# OS
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Distribution artifacts
+dist/
+build/
+target/
+
+# Python cache
+*.pyc
+**/__pycache__/
+*.pyo
+*.pyd
+
+# Temporary files
+*.tmp
+*.temp
+*~
 .DS_Store
 Thumbs.db
 ```
