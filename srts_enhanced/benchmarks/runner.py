@@ -48,12 +48,11 @@ class BenchmarkRunner:
         print("=" * 80)
         
         # Create network simulator with explicit packet loss rate if specified
-        if self.config.packet_loss_rate >= 0:
-            # Override packet loss rate from config
-            network_sim = create_simulator_from_preset(self.config.network_mode.value)
-            network_sim.condition.packet_loss_rate = self.config.packet_loss_rate
-        else:
-            network_sim = create_simulator_from_preset(self.config.network_mode.value)
+        # Pass packet_loss_rate directly to the factory function for proper handling
+        network_sim = create_simulator_from_preset(
+            self.config.network_mode.value,
+            self.config.packet_loss_rate if self.config.packet_loss_rate >= 0 else -1.0
+        )
         
         total_start = time.time()
         
