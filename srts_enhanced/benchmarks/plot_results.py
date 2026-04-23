@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Generate publication-quality plots from benchmark CSV data.
+Generate publication-quality plots from benchmark data (JSON or CSV).
 
-This script parses the latest CSV in benchmark_results/ and generates:
+This script parses the latest JSON or CSV file in benchmark_results/ and generates:
 1. Signing Latency vs. Number of Participants (for all schemes)
 2. Verification Time Comparison
 3. Signature Size Comparison
@@ -10,6 +10,7 @@ This script parses the latest CSV in benchmark_results/ and generates:
 
 import os
 import glob
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,50 +18,111 @@ from datetime import datetime
 from pathlib import Path
 
 
-def find_latest_csv(benchmark_dir: str = "benchmark_results") -> str:
-    """Find the most recent benchmark CSV file with the most data (rows)."""
+def find_latest_data_file(benchmark_dir: str = "benchmark_results"):
+    """Find the most recent benchmark data file (JSON preferred, then CSV)."""
+    # First try JSON files
+    json_files = glob.glob(os.path.join(benchmark_dir, "*phase*.json"))
+    
+    # Also check for old format JSON
+    old_json = glob.glob(os.path.join(benchmark_dir, "benchmark_*.json"))
+    json_files.extend(old_json)
+    
+    # Then try CSV files
     csv_files = glob.glob(os.path.join(benchmark_dir, "*phase*.csv"))
+    old_csv = glob.glob(os.path.join(benchmark_dir, "benchmark_*.csv"))
+    csv_files.extend(old_csv)
     
-    # Also check for old format
-    old_format = glob.glob(os.path.join(benchmark_dir, "benchmark_*.csv"))
-    csv_files.extend(old_format)
+    if not json_files and not csv_files:
+        raise FileNotFoundError(f"No benchmark JSON or CSV files found in {benchmark_dir}")
     
-    if not csv_files:
-        raise FileNotFoundError(f"No benchmark CSV files found in {benchmark_dir}")
+    # Prefer JSON if available
+    all_files = json_files + csv_files
     
-    # Find the CSV with the most rows (excluding header)
+    # Find the file with the most data
     best_file = None
     max_rows = 0
     
-    for csv_file in csv_files:
+    for data_file in all_files:
         try:
-            with open(csv_file, 'r') as f:
-                row_count = sum(1 for _ in f) - 1  # Subtract header
-                if row_count > max_rows:
-                    max_rows = row_count
-                    best_file = csv_file
+            if data_file.endswith('.json'):
+                with open(data_file, 'r') as f:
+                    data = json.load(f)
+                    row_count = len(data.get('results', []))
+            else:
+                with open(data_file, 'r') as f:
+                    row_count = sum(1 for _ in f) - 1
+            
+            if row_count > max_rows:
+                max_rows = row_count
+                best_file = data_file
         except Exception:
             continue
     
     if best_file is None:
         # Fallback to most recent by modification time
-        best_file = max(csv_files, key=os.path.getmtime)
+        best_file = max(all_files, key=os.path.getmtime)
     
     return best_file
 
 
-def load_benchmark_data(csv_path: str) -> pd.DataFrame:
+def load_benchmark_data_from_json(json_path: str) -> pd.DataFrame:
+    """Load and flatten benchmark data from JSON."""
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    
+    results = data.get('results', [])
+    
+    # Flatten the nested structure
+    flat_data = []
+    for result in results:
+        row = {
+            'scheme': result.get('scheme'),
+            'curve': result.get('curve'),
+            'n': result.get('n'),
+            't': result.get('t'),
+            'network_mode': result.get('network_mode'),
+            'packet_loss_rate': result.get('packet_loss_rate'),
+            'phase': result.get('phase'),
+        }
+        
+        # Flatten timing metrics
+        timing = result.get('timing', {})
+        for key, value in timing.items():
+            row[f'timing_{key}'] = value
+        
+        # Flatten memory metrics
+        memory = result.get('memory', {})
+        for key, value in memory.items():
+            row[f'memory_{key}'] = value
+        
+        # Flatten stress metrics
+        stress = result.get('stress_metrics', {})
+        for key, value in stress.items():
+            row[f'stress_{key}'] = value
+        
+        # Flatten signature metrics
+        signatures = result.get('signatures', {})
+        for key, value in signatures.items():
+            row[f'signatures_{key}'] = value
+        
+        flat_data.append(row)
+    
+    df = pd.DataFrame(flat_data)
+    return _clean_dataframe(df)
+
+
+def load_benchmark_data_from_csv(csv_path: str) -> pd.DataFrame:
     """Load and clean benchmark data from CSV."""
     df = pd.read_csv(csv_path)
-    
+    return _clean_dataframe(df)
+
+
+def _clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Common cleaning operations for benchmark data."""
     # Remove rows with all NaN values (if any)
     df = df.dropna(how='all')
     
     # Calculate total signing time for schemes that have it
-    # For SRTS: online_sign = partial_sign + aggregate
-    # For FROST: sign = partial_sign + aggregate
-    # For MuSig2: sign = aggregate (no partial sign phase)
-    
     if 'timing_partial_sign_mean_ms' in df.columns:
         df['timing_online_sign_mean_ms'] = (
             df['timing_partial_sign_mean_ms'].fillna(0) + 
@@ -565,16 +627,20 @@ def main_wrapper(output_dir: str = None):
     print("📈 SRTS Enhanced - Benchmark Visualization Tool")
     print("=" * 60)
     
-    # Find latest CSV
+    # Find latest data file (JSON or CSV)
     if output_dir:
-        csv_path = find_latest_csv(output_dir)
+        data_path = find_latest_data_file(output_dir)
     else:
-        csv_path = find_latest_csv()
-    print(f"\n📂 Loading data from: {csv_path}")
+        data_path = find_latest_data_file()
+    print(f"\n📂 Loading data from: {data_path}")
     
-    # Load data
-    df = load_benchmark_data(csv_path)
-    df.attrs['source_file'] = csv_path
+    # Load data based on file type
+    if data_path.endswith('.json'):
+        df = load_benchmark_data_from_json(data_path)
+    else:
+        df = load_benchmark_data_from_csv(data_path)
+    
+    df.attrs['source_file'] = data_path
     
     print(f"✓ Loaded {len(df)} benchmark records")
     print(f"  Schemes: {df['scheme'].unique().tolist()}")
@@ -582,7 +648,7 @@ def main_wrapper(output_dir: str = None):
     print(f"  Participant counts: {sorted(df['n'].unique().tolist())}")
     
     # Output directory
-    output_path = Path(output_dir) if output_dir else Path(os.path.dirname(csv_path))
+    output_path = Path(output_dir) if output_dir else Path(os.path.dirname(data_path))
     
     print("\n🎨 Generating plots...")
     
