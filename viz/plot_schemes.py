@@ -21,6 +21,46 @@ plt.style.use('seaborn-v0_8-whitegrid')
 sns.set_context("paper", font_scale=1.2)
 
 
+# =============================================================================
+# COMPATIBILITY RULES
+# =============================================================================
+# Scheme × Curve validity: valid, suboptimal, or invalid
+# Scheme × DKG Type validity: valid, suboptimal, or invalid
+
+COMPATIBILITY = {
+    # Scheme × Curve compatibility
+    'curve': {
+        ('srts', 'secp256k1'): 'valid',
+        ('srts', 'bls12-381'): 'suboptimal',
+        ('srts', 'ristretto255'): 'valid',
+        ('frost', 'secp256k1'): 'valid',
+        ('frost', 'bls12-381'): 'suboptimal',
+        ('frost', 'ristretto255'): 'valid',  # preferred
+        ('musig2', 'secp256k1'): 'valid',
+        ('musig2', 'bls12-381'): 'suboptimal',
+        ('musig2', 'ristretto255'): 'valid',
+        ('tbls', 'secp256k1'): 'invalid',   # tBLS requires pairing-friendly
+        ('tbls', 'bls12-381'): 'valid',
+        ('tbls', 'ristretto255'): 'invalid', # tBLS requires pairing-friendly
+    },
+    # Scheme × DKG Type compatibility
+    'dkg': {
+        ('srts', 'feldman_vss'): 'valid',
+        ('srts', 'pedersen_dkg'): 'valid',   # preferred, stronger security
+        ('srts', 'not_applicable'): 'invalid',
+        ('frost', 'feldman_vss'): 'valid',
+        ('frost', 'pedersen_dkg'): 'valid',  # preferred, stronger security
+        ('frost', 'not_applicable'): 'invalid',
+        ('musig2', 'feldman_vss'): 'invalid',  # uses own key aggregation
+        ('musig2', 'pedersen_dkg'): 'invalid', # same reason
+        ('musig2', 'not_applicable'): 'valid', # MuSig2 only
+        ('tbls', 'feldman_vss'): 'valid',
+        ('tbls', 'pedersen_dkg'): 'suboptimal', # overhead with no security gain
+        ('tbls', 'not_applicable'): 'invalid',
+    },
+}
+
+
 class SchemeComparator:
     """Generate comparative visualizations across threshold signature schemes."""
     
@@ -43,6 +83,51 @@ class SchemeComparator:
     def __init__(self, output_dir: str = "output/figures"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+    
+    def _skip_if_invalid(self, scheme: str, curve: str, dkg: str = None) -> bool:
+        """
+        Check if a scheme+curve+dkg combination is invalid per COMPATIBILITY.
+        
+        Returns True if the combination should be skipped (invalid).
+        """
+        scheme_lower = scheme.lower()
+        curve_lower = curve.lower()
+        
+        # Check curve compatibility
+        if (scheme_lower, curve_lower) in COMPATIBILITY['curve']:
+            if COMPATIBILITY['curve'][(scheme_lower, curve_lower)] == 'invalid':
+                return True
+        
+        # Check DKG compatibility if provided
+        if dkg is not None:
+            dkg_lower = dkg.lower()
+            if (scheme_lower, dkg_lower) in COMPATIBILITY['dkg']:
+                if COMPATIBILITY['dkg'][(scheme_lower, dkg_lower)] == 'invalid':
+                    return True
+        
+        return False
+    
+    def _annotate_musig2(self, ax: plt.Axes) -> None:
+        """
+        Add × marker style and footnote for MuSig2 being n-of-n only.
+        """
+        ax.text(0.5, -0.18, 
+                "× MuSig2 is n-of-n only, not a true threshold scheme",
+                transform=ax.transAxes, ha='center', fontsize=10, 
+                style='italic', color='#555555')
+    
+    def _annotate_tbls_invalid(self, ax: plt.Axes) -> None:
+        """
+        Overlay 'N/A' text on tBLS + secp256k1 and tBLS + ristretto255 regions.
+        This is called after plotting to mark invalid curve combinations.
+        """
+        # Get current x-axis limits
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        
+        # We'll add N/A annotations where tBLS would appear with invalid curves
+        # This is handled in individual plot methods by checking compatibility
+        pass  # Actual annotation done in plot methods where we know positions
         
     def plot_signing_latency(self, df: pd.DataFrame, 
                             title_suffix: str = "",
@@ -65,13 +150,26 @@ class SchemeComparator:
         # Group by scheme and curve
         grouped = df.groupby(['scheme', 'curve'])
         
+        has_musig2 = False
+        tbls_invalid_curves = set()
+        
         for (scheme, curve), group in grouped:
             if 'sign_ms' not in group.columns:
                 continue
-                
+            
+            # Skip invalid scheme+curve combinations
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
             label = f"{scheme.upper()} ({curve})"
             color = self.SCHEME_COLORS.get(scheme, '#333333')
             marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            if scheme.lower() == 'musig2':
+                has_musig2 = True
+                marker = 'x'  # Special marker for MuSig2
             
             # Sort by n for proper line plotting
             group = group.sort_values('n')
@@ -94,6 +192,18 @@ class SchemeComparator:
         # Set x-axis to show integer values
         n_values = sorted(df['n'].unique())
         ax.set_xticks(n_values)
+        
+        # Add MuSig2 footnote if present
+        if has_musig2:
+            self._annotate_musig2(ax)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02, 
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
         
         plt.tight_layout()
         
@@ -126,13 +236,26 @@ class SchemeComparator:
         
         grouped = df.groupby(['scheme', 'curve'])
         
+        has_musig2 = False
+        tbls_invalid_curves = set()
+        
         for (scheme, curve), group in grouped:
             if 'verify_ms' not in group.columns:
                 continue
-                
+            
+            # Skip invalid scheme+curve combinations
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
             label = f"{scheme.upper()} ({curve})"
             color = self.SCHEME_COLORS.get(scheme, '#333333')
             marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            if scheme.lower() == 'musig2':
+                has_musig2 = True
+                marker = 'x'  # Special marker for MuSig2
             
             group = group.sort_values('n')
             
@@ -153,6 +276,18 @@ class SchemeComparator:
         
         n_values = sorted(df['n'].unique())
         ax.set_xticks(n_values)
+        
+        # Add MuSig2 footnote if present
+        if has_musig2:
+            self._annotate_musig2(ax)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02, 
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
         
         plt.tight_layout()
         
@@ -422,13 +557,14 @@ class SchemeComparator:
         return None
     
     def generate_all_scheme_plots(self, df: pd.DataFrame) -> List[str]:
-        """Generate all Category 1 (Scheme Comparison) plots."""
+        """Generate all Category 1 (Scheme Comparison) plots including GROUP A and GROUP B."""
         plots = []
         
         print("\n" + "=" * 60)
         print("Generating Scheme Comparison Plots")
         print("=" * 60)
         
+        # Original plots
         try:
             plots.append(self.plot_signing_latency(df))
         except Exception as e:
@@ -453,6 +589,77 @@ class SchemeComparator:
             plots.append(self.plot_radar_chart(df))
         except Exception as e:
             print(f"⚠ Could not generate radar chart: {e}")
+        
+        # GROUP A - Signing performance plots (DKG-agnostic)
+        print("\n--- GROUP A: Signing Performance Plots ---")
+        
+        try:
+            plots.append(self.plot_compatibility_matrix())
+        except Exception as e:
+            print(f"⚠ Could not generate compatibility matrix: {e}")
+        
+        try:
+            plots.append(self.plot_ops_per_second(df))
+        except Exception as e:
+            print(f"⚠ Could not generate ops_per_second plot: {e}")
+        
+        try:
+            plots.append(self.plot_overhead_percentage(df))
+        except Exception as e:
+            print(f"⚠ Could not generate overhead_percentage plot: {e}")
+        
+        try:
+            plots.append(self.plot_efficiency_score(df))
+        except Exception as e:
+            print(f"⚠ Could not generate efficiency_score plot: {e}")
+        
+        try:
+            plots.append(self.plot_threshold_sensitivity(df))
+        except Exception as e:
+            print(f"⚠ Could not generate threshold_sensitivity plot: {e}")
+        
+        try:
+            plots.append(self.plot_slowdown_vs_n(df))
+        except Exception as e:
+            print(f"⚠ Could not generate slowdown_vs_n plot: {e}")
+        
+        try:
+            plots.append(self.plot_signing_latency_shaded(df))
+        except Exception as e:
+            print(f"⚠ Could not generate signing_latency_shaded plot: {e}")
+        
+        try:
+            plots.append(self.plot_signing_latency_grid(df))
+        except Exception as e:
+            print(f"⚠ Could not generate signing_latency_grid plot: {e}")
+        
+        # GROUP B - DKG setup phase plots
+        print("\n--- GROUP B: DKG Setup Phase Plots ---")
+        
+        try:
+            plots.append(self.plot_dkg_keygen_vs_n(df))
+        except Exception as e:
+            print(f"⚠ Could not generate dkg_keygen_vs_n plot: {e}")
+        
+        try:
+            plots.append(self.plot_dkg_keygen_vs_loss(df))
+        except Exception as e:
+            print(f"⚠ Could not generate dkg_keygen_vs_loss plot: {e}")
+        
+        try:
+            plots.append(self.plot_dkg_overhead_vs_n(df))
+        except Exception as e:
+            print(f"⚠ Could not generate dkg_overhead_vs_n plot: {e}")
+        
+        try:
+            plots.append(self.plot_dkg_pedersen_overhead_cost(df))
+        except Exception as e:
+            print(f"⚠ Could not generate dkg_pedersen_overhead_cost plot: {e}")
+        
+        try:
+            plots.append(self.plot_dkg_keygen_amortization(df))
+        except Exception as e:
+            print(f"⚠ Could not generate dkg_keygen_amortization plot: {e}")
         
         print(f"\n✓ Generated {len(plots)} scheme comparison plots")
         return plots

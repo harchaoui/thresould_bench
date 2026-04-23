@@ -17,8 +17,87 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 
 from data_loader import BenchmarkDataLoader, load_benchmark_data
-from plot_schemes import SchemeComparator
+from plot_schemes import SchemeComparator, COMPATIBILITY
 from plot_network import NetworkAnalyzer
+
+
+def print_summary_table(df: pd.DataFrame) -> None:
+    """
+    Print console summary table showing mean metrics per scheme+curve,
+    flagging invalid combinations with ✗ per COMPATIBILITY.
+    """
+    from rich.console import Console
+    from rich.table import Table
+    
+    console = Console()
+    
+    console.print("\n" + "=" * 80)
+    console.print("📊 THRESHOLD SIGNATURE BENCHMARK SUMMARY", style="bold")
+    console.print("=" * 80)
+    
+    # Aggregate by scheme+curve
+    summary = df.groupby(['scheme', 'curve']).agg({
+        'keygen_ms': 'mean',
+        'sign_ms': 'mean',
+        'verify_ms': 'mean',
+        'ops_per_second': 'mean',
+    }).reset_index()
+    
+    table = Table(title="Performance Summary by Scheme and Curve")
+    table.add_column("Scheme", justify="center", style="cyan")
+    table.add_column("Curve", justify="center", style="magenta")
+    table.add_column("KeyGen (ms)", justify="right", style="green")
+    table.add_column("Sign (ms)", justify="right", style="yellow")
+    table.add_column("Verify (ms)", justify="right", style="blue")
+    table.add_column("Ops/sec", justify="right", style="bright_green")
+    table.add_column("Status", justify="center")
+    
+    schemes = ['srts', 'frost', 'musig2', 'tbls']
+    curves = ['secp256k1', 'bls12-381', 'ristretto255']
+    
+    for scheme in schemes:
+        for curve in curves:
+            row_data = summary[(summary['scheme'] == scheme) & (summary['curve'] == curve)]
+            
+            # Check compatibility
+            is_invalid = False
+            if (scheme, curve) in COMPATIBILITY['curve']:
+                if COMPATIBILITY['curve'][(scheme, curve)] == 'invalid':
+                    is_invalid = True
+            
+            status = "✗" if is_invalid else "✓"
+            status_style = "red bold" if is_invalid else "green"
+            
+            if len(row_data) > 0 and not is_invalid:
+                row = row_data.iloc[0]
+                table.add_row(
+                    scheme.upper(),
+                    curve,
+                    f"{row['keygen_ms']:.2f}",
+                    f"{row['sign_ms']:.2f}",
+                    f"{row['verify_ms']:.2f}",
+                    f"{row['ops_per_second']:.1f}",
+                    status,
+                )
+            elif is_invalid:
+                table.add_row(
+                    scheme.upper(),
+                    curve,
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    f"[{status_style}]{status}[/]",
+                )
+    
+    console.print(table)
+    
+    # Additional notes
+    console.print("\n" + "-" * 80)
+    console.print("Notes:", style="italic")
+    console.print("  × MuSig2 is n-of-n only, not a true threshold scheme")
+    console.print("  × tBLS requires pairing-friendly curves (bls12-381)")
+    console.print("=" * 80)
 
 
 class VisualizationPipeline:
@@ -122,6 +201,26 @@ class VisualizationPipeline:
         print(f"\nOutput locations:")
         print(f"  Figures: {self.output_dir / 'figures'}")
         print(f"  Reports: {self.output_dir / 'reports'}")
+        
+        # Print console summary table
+        try:
+            print_summary_table(self.df)
+        except ImportError:
+            # Fallback if rich is not installed
+            print("\n" + "=" * 80)
+            print("THRESHOLD SIGNATURE BENCHMARK SUMMARY")
+            print("=" * 80)
+            summary = self.df.groupby(['scheme', 'curve']).agg({
+                'keygen_ms': 'mean',
+                'sign_ms': 'mean',
+                'verify_ms': 'mean',
+                'ops_per_second': 'mean',
+            }).reset_index()
+            print(summary.to_string(index=False))
+            print("Notes:")
+            print("  × MuSig2 is n-of-n only, not a true threshold scheme")
+            print("  × tBLS requires pairing-friendly curves (bls12-381)")
+            print("=" * 80)
         
         return {
             'plots': self.generated_plots,
