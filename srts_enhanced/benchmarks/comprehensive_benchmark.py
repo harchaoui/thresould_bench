@@ -450,10 +450,22 @@ class ComprehensiveBenchmark:
         return str(md_file)
     
     def _generate_stress_analysis(self, f):
-        """Generate intelligent comparative stress analysis."""
-        # Group results by packet loss rate and scheme
-        loss_rates = sorted(set(r.get("packet_loss_rate", 0.0) for r in self.all_results))
-        schemes = sorted(set(r.get("scheme", "") for r in self.all_results))
+        """
+        Generate intelligent comparative stress analysis.
+        
+        CRITICAL: Must compare apples-to-apples - same scheme, same n/t, within lossy network tests only.
+        Compares phase3_network tests at 0% loss vs X% loss for identical configurations.
+        """
+        # Filter to only phase3_network results for valid stress comparison
+        phase3_results = [r for r in self.all_results if r.get("phase", "").startswith("phase3_network")]
+        
+        if not phase3_results:
+            f.write("*Insufficient data for stress analysis (need phase3_network results).*\n\n")
+            return
+        
+        # Group by packet loss rate and scheme
+        loss_rates = sorted(set(r.get("packet_loss_rate", 0.0) for r in phase3_results))
+        schemes = sorted(set(r.get("scheme", "") for r in phase3_results))
         
         if not loss_rates or not schemes:
             f.write("*Insufficient data for stress analysis.*\n\n")
@@ -461,71 +473,89 @@ class ComprehensiveBenchmark:
         
         f.write("### Performance Degradation Analysis\n\n")
         
-        # Analyze degradation from 0% loss to highest loss
-        zero_loss_results = [r for r in self.all_results if r.get("packet_loss_rate", 0.0) == 0.0]
-        high_loss_results = [r for r in self.all_results if r.get("packet_loss_rate", 0.0) == max(loss_rates)]
+        # For each scheme, compare 0% loss vs highest loss WITHIN phase3 (same n values)
+        # This ensures we're comparing identical configurations
+        zero_loss_results = [r for r in phase3_results if r.get("packet_loss_rate", 0.0) == 0.0]
+        high_loss_results = [r for r in phase3_results if r.get("packet_loss_rate", 0.0) == max(loss_rates)]
         
         if zero_loss_results and high_loss_results:
-            f.write("**Under varying packet loss conditions**:\n\n")
+            f.write("**Under varying packet loss conditions** (comparing identical n/t configurations):\n\n")
+            
+            scheme_degradations = []
             
             for scheme in schemes:
-                scheme_zero = [r for r in zero_loss_results if r.get("scheme") == scheme]
-                scheme_high = [r for r in high_loss_results if r.get("scheme") == scheme]
+                # Get all n values tested at 0% loss for this scheme
+                scheme_zero_by_nt = {}
+                for r in zero_loss_results:
+                    if r.get("scheme") == scheme:
+                        key = (r.get("n"), r.get("t"))
+                        if key not in scheme_zero_by_nt:
+                            scheme_zero_by_nt[key] = []
+                        scheme_zero_by_nt[key].append(r)
                 
-                if scheme_zero and scheme_high:
-                    # Calculate average total times
-                    avg_time_zero = sum(
+                # Get matching n values at high loss
+                scheme_high_by_nt = {}
+                for r in high_loss_results:
+                    if r.get("scheme") == scheme:
+                        key = (r.get("n"), r.get("t"))
+                        if key not in scheme_high_by_nt:
+                            scheme_high_by_nt[key] = []
+                        scheme_high_by_nt[key].append(r)
+                
+                # Only compare configurations that exist at both loss rates
+                matching_configs = set(scheme_zero_by_nt.keys()) & set(scheme_high_by_nt.keys())
+                
+                if not matching_configs:
+                    continue
+                
+                # Calculate degradation for each matching config, then average
+                degradations = []
+                overheads_high = []
+                
+                for n, t in matching_configs:
+                    # Average across all iterations for this config at 0% loss
+                    times_zero = [
                         r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
-                        for r in scheme_zero
-                    ) / len(scheme_zero)
+                        for r in scheme_zero_by_nt[(n, t)]
+                    ]
+                    avg_time_zero = sum(times_zero) / len(times_zero) if times_zero else 0
                     
-                    avg_time_high = sum(
+                    # Average across all iterations for this config at high loss
+                    times_high = [
                         r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
-                        for r in scheme_high
-                    ) / len(scheme_high)
+                        for r in scheme_high_by_nt[(n, t)]
+                    ]
+                    avg_time_high = sum(times_high) / len(times_high) if times_high else 0
                     
-                    if avg_time_zero > 0:
-                        slowdown_pct = ((avg_time_high - avg_time_zero) / avg_time_zero) * 100
-                        
-                        # Get network overhead
-                        avg_overhead_high = sum(
-                            r.get("stress_metrics", {}).get("avg_network_overhead_ms", 0) 
-                            for r in scheme_high
-                        ) / len(scheme_high)
-                        
-                        f.write(f"- **{scheme.upper()}**: ")
-                        f.write(f"Experienced {slowdown_pct:.1f}% slowdown at {max(loss_rates)*100:.1f}% packet loss. ")
-                        f.write(f"Network overhead: {avg_overhead_high:.1f}ms.\n")
+                    # Network overhead at high loss
+                    overheads = [
+                        r.get("stress_metrics", {}).get("avg_network_overhead_ms", 0) 
+                        for r in scheme_high_by_nt[(n, t)]
+                    ]
+                    overheads_high.extend(overheads)
+                    
+                    if avg_time_zero > 0 and avg_time_high > 0:
+                        degradation = ((avg_time_high - avg_time_zero) / avg_time_zero) * 100
+                        degradations.append(degradation)
+                
+                if degradations:
+                    avg_degradation = sum(degradations) / len(degradations)
+                    avg_overhead = sum(overheads_high) / len(overheads_high) if overheads_high else 0
+                    scheme_degradations.append((scheme, avg_degradation, avg_overhead))
+                    
+                    f.write(f"- **{scheme.upper()}**: ")
+                    f.write(f"Experienced {avg_degradation:.1f}% slowdown at {max(loss_rates)*100:.1f}% packet loss. ")
+                    f.write(f"Network overhead: {avg_overhead:.1f}ms.\n")
             
             f.write("\n")
             
             # Recommendations based on analysis
             f.write("### Recommendations\n\n")
             
-            # Find most resilient scheme (lowest slowdown)
-            scheme_slowdowns = []
-            for scheme in schemes:
-                scheme_zero = [r for r in zero_loss_results if r.get("scheme") == scheme]
-                scheme_high = [r for r in high_loss_results if r.get("scheme") == scheme]
-                
-                if scheme_zero and scheme_high:
-                    avg_time_zero = sum(
-                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
-                        for r in scheme_zero
-                    ) / len(scheme_zero)
-                    avg_time_high = sum(
-                        r.get("stress_metrics", {}).get("avg_total_time_ms", 0) 
-                        for r in scheme_high
-                    ) / len(scheme_high)
-                    
-                    if avg_time_zero > 0:
-                        slowdown = ((avg_time_high - avg_time_zero) / avg_time_zero) * 100
-                        scheme_slowdowns.append((scheme, slowdown))
-            
-            if scheme_slowdowns:
-                scheme_slowdowns.sort(key=lambda x: x[1])
-                most_resilient = scheme_slowdowns[0]
-                least_resilient = scheme_slowdowns[-1]
+            if scheme_degradations:
+                scheme_degradations.sort(key=lambda x: x[1])
+                most_resilient = scheme_degradations[0]
+                least_resilient = scheme_degradations[-1]
                 
                 f.write(f"- **Most resilient to packet loss**: {most_resilient[0].upper()} ")
                 f.write(f"({most_resilient[1]:.1f}% slowdown)\n")
@@ -536,7 +566,8 @@ class ComprehensiveBenchmark:
                 f.write("\n**Use Case Recommendations**:\n\n")
                 f.write("- **For mobile/unstable networks**: Prefer schemes with lower slowdown percentages.\n")
                 f.write("- **For LAN/datacenter environments**: All schemes perform well; choose based on baseline latency.\n")
-                f.write("- **For high-security applications**: Consider TBLS for its stable performance under stress.\n")
+                f.write("- **For high-throughput applications**: SRTS/FROST offer best balance of speed and resilience.\n")
+                f.write("- **For signature size efficiency**: TBLS provides constant-size signatures regardless of n.\n")
                 f.write("- **For low-latency requirements**: MuSig2 shows best baseline performance in ideal conditions.\n")
         
         f.write("\n")

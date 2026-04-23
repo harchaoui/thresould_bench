@@ -212,7 +212,7 @@ class RoundTripContext:
             self.simulator.receive_message(self.data_size_bytes)
 
 
-def create_simulator_from_preset(preset: str) -> NetworkSimulator:
+def create_simulator_from_preset(preset: str, packet_loss_rate: float = -1.0) -> NetworkSimulator:
     """
     Create a network simulator from a preset configuration.
     
@@ -220,18 +220,35 @@ def create_simulator_from_preset(preset: str) -> NetworkSimulator:
         - 'none': No simulation (real hardware)
         - 'lan': Local area network (1ms latency)
         - 'wan': Wide area network (50ms latency, 5ms jitter)
-        - 'lossy': Lossy network (10ms latency, 1% packet loss)
+        - 'lossy': Lossy network (ONLY packet loss, no base latency - delays come from retries)
         - 'mobile': Mobile network (100ms latency, 20ms jitter, 0.5% loss)
+    
+    Args:
+        preset: Name of the preset configuration
+        packet_loss_rate: Override packet loss rate (useful for stress testing)
     """
+    # For 'lossy' mode, we want ONLY packet loss with NO base latency
+    # Network overhead comes entirely from retry timeouts, not fixed delays
+    if preset == 'lossy':
+        simulator = NetworkSimulator(latency_ms=0.0, packet_loss_rate=0.01)
+        # Allow override of packet loss rate
+        if packet_loss_rate >= 0:
+            simulator.condition.packet_loss_rate = packet_loss_rate
+        return simulator
+    
     presets = {
         'none': NetworkSimulator(),
         'lan': NetworkSimulator(latency_ms=1.0),
         'wan': NetworkSimulator(latency_ms=50.0, jitter_ms=5.0),
-        'lossy': NetworkSimulator(latency_ms=10.0, packet_loss_rate=0.01),
         'mobile': NetworkSimulator(latency_ms=100.0, jitter_ms=20.0, packet_loss_rate=0.005)
     }
     
     if preset not in presets:
-        raise ValueError(f"Unknown network preset: {preset}. Available: {list(presets.keys())}")
+        raise ValueError(f"Unknown network preset: {preset}. Available: ['none', 'lan', 'wan', 'lossy', 'mobile']")
     
-    return presets[preset]
+    simulator = presets[preset]
+    # Allow override of packet loss rate for other presets too
+    if packet_loss_rate >= 0:
+        simulator.condition.packet_loss_rate = packet_loss_rate
+    
+    return simulator
