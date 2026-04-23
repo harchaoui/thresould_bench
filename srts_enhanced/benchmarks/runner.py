@@ -262,26 +262,30 @@ class BenchmarkRunner:
         }
         
         # Phase 1: Key Generation
-        with Timer(metrics, "keygen") as keygen_timer:
+        keygen_start = time.perf_counter()
+        with Timer(metrics, "keygen"):
             # MuSig2 is n-of-n multi-sig (no threshold), uses keygen_multi
             if hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2":
                 keys = scheme.keygen_multi(n)
             else:
                 keys = scheme.keygen(n, t)
-        
-        stress_metrics["base_crypto_time_ms"] += (keygen_timer.end_time - keygen_timer.start_time) * 1000 if hasattr(keygen_timer, 'end_time') else 0
+        keygen_end = time.perf_counter()
+        stress_metrics["base_crypto_time_ms"] += (keygen_end - keygen_start) * 1000
         
         # Phase 2: Presignature Generation (for SRTS/FROST)
         presign_data = None
         is_musig2 = hasattr(scheme, 'scheme_name') and scheme.scheme_name == "MuSig2"
         
         if hasattr(scheme, 'presign') and not is_musig2:
+            presign_start = time.perf_counter()
             with Timer(metrics, "presign"):
                 presign_data = scheme.presign(message, participants)
                 presign_data["public_key"] = keys["public_key"]
+            presign_end = time.perf_counter()
+            stress_metrics["base_crypto_time_ms"] += (presign_end - presign_start) * 1000
                 
                 # Simulate network communication with retry logic
-                if not is_warmup:
+            if not is_warmup:
                     result = network_sim.send_with_retry(1024, max_retries=3)
                     stress_metrics["network_wait_time_ms"] += result["delay"]
                     stress_metrics["retry_count"] += result["retries"]
@@ -300,14 +304,18 @@ class BenchmarkRunner:
             
             # Generate nonces for all participants
             nonces = []
+            nonce_gen_start = time.perf_counter()
             with Timer(metrics, "nonce_gen"):
                 for pid in sign_participants:
                     nonce = scheme.generate_nonces(pid)
                     nonces.append(nonce)
+            nonce_gen_end = time.perf_counter()
+            stress_metrics["base_crypto_time_ms"] += (nonce_gen_end - nonce_gen_start) * 1000
             
             # Presign phase - compute shared R and challenge
             presign_data_list = []
             agg_nonces = []  # Collect aggregated nonces for final aggregation
+            musig2_presign_start = time.perf_counter()
             with Timer(metrics, "presign"):
                 for i in range(len(sign_participants)):
                     presign_data = scheme.presign(
@@ -320,8 +328,11 @@ class BenchmarkRunner:
                     # Extract public nonce for aggregation
                     if 'public_nonce' in presign_data:
                         agg_nonces.append(presign_data['public_nonce'])
+            musig2_presign_end = time.perf_counter()
+            stress_metrics["base_crypto_time_ms"] += (musig2_presign_end - musig2_presign_start) * 1000
             
             # Sign phase
+            partial_sign_start = time.perf_counter()
             with Timer(metrics, "partial_sign"):
                 for i, pid in enumerate(sign_participants):
                     sk = keys["secret_keys"][i]
@@ -343,10 +354,13 @@ class BenchmarkRunner:
                         stress_metrics["total_messages_sent"] += 1 + result["retries"]
                         if not result["success"]:
                             stress_metrics["success"] = False
+            partial_sign_end = time.perf_counter()
+            stress_metrics["base_crypto_time_ms"] += (partial_sign_end - partial_sign_start) * 1000
         else:
             # Threshold schemes: Use t participants
             sign_participants = participants[:t]
             
+            partial_sign_start = time.perf_counter()
             with Timer(metrics, "partial_sign"):
                 for i, pid in enumerate(sign_participants):
                     share = keys["shares"][i][1]
@@ -370,8 +384,11 @@ class BenchmarkRunner:
                         stress_metrics["total_messages_sent"] += 1 + result["retries"]
                         if not result["success"]:
                             stress_metrics["success"] = False
+            partial_sign_end = time.perf_counter()
+            stress_metrics["base_crypto_time_ms"] += (partial_sign_end - partial_sign_start) * 1000
         
         # Phase 4: Signature Aggregation
+        aggregate_start = time.perf_counter()
         with Timer(metrics, "aggregate"):
             if is_musig2:
                 # MuSig2: Use presign_data_list[0] which contains R_point and R_serialized
@@ -389,8 +406,11 @@ class BenchmarkRunner:
             else:
                 # Fallback
                 sig = partial_sigs[0]
+        aggregate_end = time.perf_counter()
+        stress_metrics["base_crypto_time_ms"] += (aggregate_end - aggregate_start) * 1000
         
         # Phase 5: Verification
+        verify_start = time.perf_counter()
         with Timer(metrics, "verify"):
             if hasattr(scheme, 'verify'):
                 # For MuSig2, use the aggregated_key_obj which has proper attributes
@@ -401,6 +421,8 @@ class BenchmarkRunner:
                 valid = scheme.verify(message, sig, pk_to_verify)
                 if not valid:
                     raise ValueError("Signature verification failed!")
+        verify_end = time.perf_counter()
+        stress_metrics["base_crypto_time_ms"] += (verify_end - verify_start) * 1000
         
         # Record signature size
         if isinstance(sig, dict) and 'signature' in sig:
