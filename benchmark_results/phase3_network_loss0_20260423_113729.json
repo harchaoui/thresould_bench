@@ -1,0 +1,8 @@
+[
+  {"scheme": "srts", "curve": "secp256k1", "n": 10, "t": 6, "loss_rate": 0.0, "keygen_ms": 6.47, "sign_ms": 7.54, "verify_ms": 2.14, "network_overhead_ms": 0.0},
+  {"scheme": "srts", "curve": "secp256k1", "n": 20, "t": 11, "loss_rate": 0.0, "keygen_ms": 11.01, "sign_ms": 13.63, "verify_ms": 2.12, "network_overhead_ms": 0.0},
+  {"scheme": "frost", "curve": "secp256k1", "n": 10, "t": 6, "loss_rate": 0.0, "keygen_ms": 6.41, "sign_ms": 8.39, "verify_ms": 2.13, "network_overhead_ms": 0.0},
+  {"scheme": "frost", "curve": "secp256k1", "n": 20, "t": 11, "loss_rate": 0.0, "keygen_ms": 10.97, "sign_ms": 15.29, "verify_ms": 2.12, "network_overhead_ms": 0.0},
+  {"scheme": "tbls", "curve": "bls12-381", "n": 10, "t": 6, "loss_rate": 0.0, "keygen_ms": 50.59, "sign_ms": 655.62, "verify_ms": 954.31, "network_overhead_ms": 0.0},
+  {"scheme": "tbls", "curve": "bls12-381", "n": 20, "t": 11, "loss_rate": 0.0, "keygen_ms": 85.74, "sign_ms": 1195.77, "verify_ms": 953.74, "network_overhead_ms": 0.0}
+]
