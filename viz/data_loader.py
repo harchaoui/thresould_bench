@@ -84,7 +84,13 @@ class BenchmarkDataLoader:
         filename = Path(file_path).stem
         phase_name = '_'.join(filename.split('_')[:-1])  # Remove timestamp
         
-        results = data.get('results', [])
+        # Handle both formats: {"results": [...]} and direct list [...]
+        if isinstance(data, list):
+            results = data
+        elif isinstance(data, dict):
+            results = data.get('results', [])
+        else:
+            results = []
         
         # Add metadata to each result
         for result in results:
@@ -181,12 +187,7 @@ class BenchmarkDataLoader:
         df['ops_per_second'] = 1000 / df['sign_ms'].replace(0, np.nan)
         
         # Slowdown ratio (need baseline for comparison)
-        # Group by scheme, curve, n, t and calculate ratio to minimum loss rate
-        baseline = df.groupby(['scheme', 'curve', 'n', 't'])['sign_ms'].transform(
-            lambda x: x[df.loc[x.index, 'loss_rate'] == x.index.get_level_values('loss_rate').min()]
-                      .iloc[0] if len(x[df.loc[x.index, 'loss_rate'] == x.index.get_level_values('loss_rate').min()]) > 0 else np.nan
-        )
-        # Simplified approach
+        # Sort by loss rate and get baseline (first = lowest loss rate)
         df = df.sort_values('loss_rate')
         df['baseline_sign_ms'] = df.groupby(['scheme', 'curve', 'n', 't'])['sign_ms'].transform('first')
         df['slowdown_ratio'] = df['sign_ms'] / df['baseline_sign_ms']
