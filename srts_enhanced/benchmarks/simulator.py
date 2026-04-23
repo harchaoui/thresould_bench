@@ -115,18 +115,20 @@ class NetworkSimulator:
         """Simulate receiving a message with network conditions."""
         return self.simulate_delay(data_size_bytes)
     
-    def send_with_retry(self, data_size_bytes: int = 0, max_retries: int = 3) -> Dict[str, Any]:
+    def send_with_retry(self, data_size_bytes: int = 0, max_retries: int = 3, 
+                        timeout_ms: float = 100.0) -> Dict[str, Any]:
         """
         Send a message with automatic retry on packet loss.
         
         Args:
             data_size_bytes: Size of data being sent
             max_retries: Maximum number of retry attempts
+            timeout_ms: Timeout per attempt before retry (simulates waiting for ACK)
             
         Returns:
             Dict with keys:
                 - success (bool): Whether the packet was eventually delivered
-                - delay (float): Total delay including retries
+                - delay (float): Total delay including retries and timeouts
                 - retries (int): Number of retries needed
                 - lost (bool): Whether any packets were lost during transmission
         """
@@ -145,12 +147,13 @@ class NetworkSimulator:
                     "lost": retries > 0
                 }
             
-            # Packet lost, apply exponential backoff before retry
+            # Packet lost, apply timeout before retry (simulates waiting for ACK timeout)
             if attempt < max_retries:
                 retries += 1
                 self.packets_retried += 1
-                backoff = 0.01 * (2 ** attempt)  # Exponential backoff: 10ms, 20ms, 40ms...
-                time.sleep(backoff)
+                # Apply realistic timeout delay for each retry
+                time.sleep(timeout_ms / 1000.0)
+                total_delay += timeout_ms
         
         # All retries exhausted
         return {
