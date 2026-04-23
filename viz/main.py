@@ -206,21 +206,33 @@ class VisualizationPipeline:
             
             f.write("### ⚡ Lowest Signing Latency\n")
             best_sign = baseline_avg['sign_ms'].idxmin()
-            f.write(f"**{best_sign.upper()}** - Average: {baseline_avg.loc[best_sign, 'sign_ms']:.2f} ms\n\n")
+            if pd.isna(best_sign) or not isinstance(best_sign, str):
+                f.write("**N/A** - No baseline signing data available\n\n")
+            else:
+                f.write(f"**{best_sign.upper()}** - Average: {baseline_avg.loc[best_sign, 'sign_ms']:.2f} ms\n\n")
             
             f.write("### ✅ Fastest Verification\n")
             best_verify = baseline_avg['verify_ms'].idxmin()
-            f.write(f"**{best_verify.upper()}** - Average: {baseline_avg.loc[best_verify, 'verify_ms']:.2f} ms\n\n")
+            if pd.isna(best_verify) or not isinstance(best_verify, str):
+                f.write("**N/A** - No baseline verification data available\n\n")
+            else:
+                f.write(f"**{best_verify.upper()}** - Average: {baseline_avg.loc[best_verify, 'verify_ms']:.2f} ms\n\n")
             
             f.write("### 🔑 Fastest Key Generation\n")
             best_keygen = baseline_avg['keygen_ms'].idxmin()
-            f.write(f"**{best_keygen.upper()}** - Average: {baseline_avg.loc[best_keygen, 'keygen_ms']:.2f} ms\n\n")
+            if pd.isna(best_keygen) or not isinstance(best_keygen, str):
+                f.write("**N/A** - No baseline key generation data available\n\n")
+            else:
+                f.write(f"**{best_keygen.upper()}** - Average: {baseline_avg.loc[best_keygen, 'keygen_ms']:.2f} ms\n\n")
             
             if 'slowdown_percentage' in df.columns:
                 f.write("### 🛡️ Most Network Resilient\n")
                 stress_avg = stress_df.groupby('scheme')['slowdown_percentage'].mean()
                 best_resilient = stress_avg.idxmin()
-                f.write(f"**{best_resilient.upper()}** - Average slowdown: {stress_avg.loc[best_resilient]:.1f}%\n\n")
+                if pd.isna(best_resilient) or not isinstance(best_resilient, str):
+                    f.write("**N/A** - No stress test data available\n\n")
+                else:
+                    f.write(f"**{best_resilient.upper()}** - Average slowdown: {stress_avg.loc[best_resilient]:.1f}%\n\n")
             
             # Generated Plots
             f.write("## Generated Visualizations\n\n")
