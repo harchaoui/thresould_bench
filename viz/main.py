@@ -27,7 +27,7 @@ class VisualizationPipeline:
     def __init__(self, results_dir: str = "benchmark_results",
                  output_dir: str = "output"):
         self.results_dir = Path(results_dir)
-        self.output_dir = Path(output)
+        self.output_dir = Path(output_dir)
         
         # Create output subdirectories
         (self.output_dir / 'figures').mkdir(parents=True, exist_ok=True)
