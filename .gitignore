@@ -5,6 +5,26 @@ __pycache__/
 *.pyo
 *.pyd
 
+
 # Output directories
 output/
 ```
+=======
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+```.DS_Store
+output/
+.DS_Store
+output/
+

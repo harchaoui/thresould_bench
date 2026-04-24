@@ -1,0 +1,827 @@
+{
+  "metadata": {
+    "start_time": "2026-04-23T23:18:05.027850",
+    "version": "2.0",
+    "phases_completed": [
+      "phase0_theoretical"
+    ]
+  },
+  "results": [
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 4.415353401273023,
+        "keygen_median_ms": 4.39945900143357,
+        "keygen_std_ms": 0.04687381226773168,
+        "keygen_p95_ms": 4.503334006585646,
+        "presign_mean_ms": 10.41955683962442,
+        "presign_median_ms": 10.421375001897104,
+        "presign_std_ms": 0.06026945918633076,
+        "presign_p95_ms": 10.49441700160969,
+        "partial_sign_mean_ms": 3.979206720541697,
+        "partial_sign_median_ms": 3.9729589989292435,
+        "partial_sign_std_ms": 0.02995950814297459,
+        "partial_sign_p95_ms": 4.0274169950862415,
+        "aggregate_mean_ms": 7.145263278798666,
+        "aggregate_median_ms": 7.120374997612089,
+        "aggregate_std_ms": 0.08241096833427229,
+        "aggregate_p95_ms": 7.235625002067536,
+        "verify_mean_ms": 3.4207715999218635,
+        "verify_median_ms": 3.4065410000039265,
+        "verify_std_ms": 0.05382160977446662,
+        "verify_p95_ms": 3.5068329962086864
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.2,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 29.34,
+        "avg_crypto_time_ms": 29.34,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 3.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245028"
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 5.948598360118922,
+        "keygen_median_ms": 5.91304199770093,
+        "keygen_std_ms": 0.13152960378869852,
+        "keygen_p95_ms": 6.249833997571841,
+        "presign_mean_ms": 17.597861679678317,
+        "presign_median_ms": 17.425582998839673,
+        "presign_std_ms": 0.5443312501301683,
+        "presign_p95_ms": 18.979500004206784,
+        "partial_sign_mean_ms": 5.998454920190852,
+        "partial_sign_median_ms": 5.968625002424233,
+        "partial_sign_std_ms": 0.10695636864037805,
+        "partial_sign_p95_ms": 6.204582998179831,
+        "aggregate_mean_ms": 9.247660079272464,
+        "aggregate_median_ms": 9.131209000770468,
+        "aggregate_std_ms": 0.3255903919500823,
+        "aggregate_p95_ms": 10.117083002114668,
+        "verify_mean_ms": 3.431341639952734,
+        "verify_median_ms": 3.4079159959219396,
+        "verify_std_ms": 0.06146798567127701,
+        "verify_p95_ms": 3.5669999997480772
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.08,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 42.35,
+        "avg_crypto_time_ms": 42.35,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 4.0,
+        "bandwidth_inflation_factor": 0.4,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245064"
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 10,
+      "t": 6,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 10.353115040052217,
+        "keygen_median_ms": 10.328000003937632,
+        "keygen_std_ms": 0.18666314579599158,
+        "keygen_p95_ms": 10.452374997839797,
+        "presign_mean_ms": 35.25780176045373,
+        "presign_median_ms": 34.76387500268174,
+        "presign_std_ms": 2.3289300669350874,
+        "presign_p95_ms": 35.08987499662908,
+        "partial_sign_mean_ms": 12.098066599864978,
+        "partial_sign_median_ms": 11.967625003308058,
+        "partial_sign_std_ms": 0.6535897553428592,
+        "partial_sign_p95_ms": 12.134082993725315,
+        "aggregate_mean_ms": 15.26346168044256,
+        "aggregate_median_ms": 15.151958003116306,
+        "aggregate_std_ms": 0.5326920607882429,
+        "aggregate_p95_ms": 15.471999999135733,
+        "verify_mean_ms": 3.447256639774423,
+        "verify_median_ms": 3.4210419980809093,
+        "verify_std_ms": 0.0899525148172887,
+        "verify_p95_ms": 3.576000002794899
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 280.04,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 75.65,
+        "avg_crypto_time_ms": 75.65,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 7.0,
+        "bandwidth_inflation_factor": 0.35,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245067"
+    },
+    {
+      "scheme": "srts",
+      "curve": "secp256k1",
+      "n": 20,
+      "t": 11,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 17.99734667962184,
+        "keygen_median_ms": 17.719957999361213,
+        "keygen_std_ms": 0.8243288707221881,
+        "keygen_p95_ms": 20.02770800027065,
+        "presign_mean_ms": 70.89053516101558,
+        "presign_median_ms": 69.5092499954626,
+        "presign_std_ms": 4.324840225431686,
+        "presign_p95_ms": 83.48962500167545,
+        "partial_sign_mean_ms": 22.056708160380367,
+        "partial_sign_median_ms": 21.94949999829987,
+        "partial_sign_std_ms": 0.582505913108166,
+        "partial_sign_p95_ms": 22.093624997069128,
+        "aggregate_mean_ms": 25.262443401152268,
+        "aggregate_median_ms": 25.138874996628147,
+        "aggregate_std_ms": 0.6795060777577027,
+        "aggregate_p95_ms": 25.31641699897591,
+        "verify_mean_ms": 3.4415065989014693,
+        "verify_median_ms": 3.416917003050912,
+        "verify_std_ms": 0.09086750743917521,
+        "verify_p95_ms": 3.503499996440951
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 281.08,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 139.19,
+        "avg_crypto_time_ms": 139.19,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 12.0,
+        "bandwidth_inflation_factor": 0.3,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245068"
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 2,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 4.409416679700371,
+        "keygen_median_ms": 4.407708001963329,
+        "keygen_std_ms": 0.03436874060743367,
+        "keygen_p95_ms": 4.465291996893939,
+        "presign_mean_ms": 8.902411600283813,
+        "presign_median_ms": 8.88633300201036,
+        "presign_std_ms": 0.051970447975178864,
+        "presign_p95_ms": 8.99812500574626,
+        "partial_sign_mean_ms": 4.46106164046796,
+        "partial_sign_median_ms": 4.453082998225,
+        "partial_sign_std_ms": 0.032662069458903785,
+        "partial_sign_p95_ms": 4.536542001005728,
+        "aggregate_mean_ms": 7.146291719400324,
+        "aggregate_median_ms": 7.12566699803574,
+        "aggregate_std_ms": 0.046845155885000614,
+        "aggregate_p95_ms": 7.236874997033738,
+        "verify_mean_ms": 3.406221719633322,
+        "verify_median_ms": 3.4087909953086637,
+        "verify_std_ms": 0.0201285610021439,
+        "verify_p95_ms": 3.4393339956295677
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 257.84,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 28.33,
+        "avg_crypto_time_ms": 28.33,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 3.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245070"
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 3,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 5.970370039867703,
+        "keygen_median_ms": 5.895374997635372,
+        "keygen_std_ms": 0.28707510182157375,
+        "keygen_p95_ms": 6.725500003085472,
+        "presign_mean_ms": 15.174334959010594,
+        "presign_median_ms": 14.873790998535696,
+        "presign_std_ms": 0.9732759521928348,
+        "presign_p95_ms": 16.826541999762412,
+        "partial_sign_mean_ms": 6.821091600286309,
+        "partial_sign_median_ms": 6.708875000185799,
+        "partial_sign_std_ms": 0.4569485185604374,
+        "partial_sign_p95_ms": 7.137292006518692,
+        "aggregate_mean_ms": 9.252116638817824,
+        "aggregate_median_ms": 9.150750003755093,
+        "aggregate_std_ms": 0.3611771948095017,
+        "aggregate_p95_ms": 10.262999996484723,
+        "verify_mean_ms": 3.501676680170931,
+        "verify_median_ms": 3.42258299497189,
+        "verify_std_ms": 0.26692159352662026,
+        "verify_p95_ms": 3.8517909997608513
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258.16,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 40.9,
+        "avg_crypto_time_ms": 40.9,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 4.0,
+        "bandwidth_inflation_factor": 0.4,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245072"
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 10,
+      "t": 6,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 10.383489839732647,
+        "keygen_median_ms": 10.308624994650017,
+        "keygen_std_ms": 0.28574233678376065,
+        "keygen_p95_ms": 10.757042000477668,
+        "presign_mean_ms": 30.07857335935114,
+        "presign_median_ms": 29.73550000024261,
+        "presign_std_ms": 1.328601740660396,
+        "presign_p95_ms": 34.02404200460296,
+        "partial_sign_mean_ms": 13.719951640814543,
+        "partial_sign_median_ms": 13.443499999993946,
+        "partial_sign_std_ms": 1.0925945643512864,
+        "partial_sign_p95_ms": 15.232167002977803,
+        "aggregate_mean_ms": 15.42329167976277,
+        "aggregate_median_ms": 15.147750003961846,
+        "aggregate_std_ms": 1.0107807513682967,
+        "aggregate_p95_ms": 17.148665996501222,
+        "verify_mean_ms": 3.5440817184280604,
+        "verify_median_ms": 3.421082998102065,
+        "verify_std_ms": 0.553718754092163,
+        "verify_p95_ms": 3.846500003419351
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 258.12,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 73.44,
+        "avg_crypto_time_ms": 73.44,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 7.0,
+        "bandwidth_inflation_factor": 0.35,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245073"
+    },
+    {
+      "scheme": "frost",
+      "curve": "secp256k1",
+      "n": 20,
+      "t": 11,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 17.69146332051605,
+        "keygen_median_ms": 17.69895799952792,
+        "keygen_std_ms": 0.06286145267105091,
+        "keygen_p95_ms": 17.788582998036873,
+        "presign_mean_ms": 60.43884839920793,
+        "presign_median_ms": 59.50783399748616,
+        "presign_std_ms": 4.580634385805609,
+        "presign_p95_ms": 60.388833000615705,
+        "partial_sign_mean_ms": 24.723596679395996,
+        "partial_sign_median_ms": 24.694209001609124,
+        "partial_sign_std_ms": 0.14076902447753753,
+        "partial_sign_p95_ms": 24.875957999029197,
+        "aggregate_mean_ms": 25.192695039440878,
+        "aggregate_median_ms": 25.187874998664483,
+        "aggregate_std_ms": 0.08716287265736596,
+        "aggregate_p95_ms": 25.339291998534463,
+        "verify_mean_ms": 3.5031866398639977,
+        "verify_median_ms": 3.430875003687106,
+        "verify_std_ms": 0.3466219944726127,
+        "verify_p95_ms": 3.5250420041847974
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 257.96,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 131.74,
+        "avg_crypto_time_ms": 131.74,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 12.0,
+        "bandwidth_inflation_factor": 0.3,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245075"
+    },
+    {
+      "scheme": "tbls",
+      "curve": "bls12-381",
+      "n": 3,
+      "t": 2,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 35.47227992065018,
+        "keygen_median_ms": 34.75904200604418,
+        "keygen_std_ms": 3.0492064076037337,
+        "keygen_p95_ms": 43.214875004196074,
+        "partial_sign_mean_ms": 361.656226599589,
+        "partial_sign_median_ms": 356.0234160031541,
+        "partial_sign_std_ms": 17.47705967751077,
+        "partial_sign_p95_ms": 384.70412499736995,
+        "aggregate_mean_ms": 1599.2663118004566,
+        "aggregate_median_ms": 1599.0380420043948,
+        "aggregate_std_ms": 14.649475740200266,
+        "aggregate_p95_ms": 1622.9563750021043,
+        "verify_mean_ms": 1553.9514949600562,
+        "verify_median_ms": 1549.847583999508,
+        "verify_std_ms": 25.656361623962688,
+        "verify_p95_ms": 1584.6075000008568
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 384,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 3551.86,
+        "avg_crypto_time_ms": 3551.86,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 2.0,
+        "bandwidth_inflation_factor": 0.33,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245077"
+    },
+    {
+      "scheme": "tbls",
+      "curve": "bls12-381",
+      "n": 5,
+      "t": 3,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 46.82505160017172,
+        "keygen_median_ms": 46.23066600470338,
+        "keygen_std_ms": 2.711531028109722,
+        "keygen_p95_ms": 52.95262500294484,
+        "partial_sign_mean_ms": 535.831646680308,
+        "partial_sign_median_ms": 527.5706250031362,
+        "partial_sign_std_ms": 16.45031268323739,
+        "partial_sign_p95_ms": 575.0198749956326,
+        "aggregate_mean_ms": 1602.0489100791747,
+        "aggregate_median_ms": 1601.0843749972992,
+        "aggregate_std_ms": 17.236893437851155,
+        "aggregate_p95_ms": 1630.1711249980144,
+        "verify_mean_ms": 1557.80413496017,
+        "verify_median_ms": 1554.7435830012546,
+        "verify_std_ms": 27.473600268992726,
+        "verify_p95_ms": 1627.7387920054025
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 384,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 3741.69,
+        "avg_crypto_time_ms": 3741.69,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 3.0,
+        "bandwidth_inflation_factor": 0.3,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245078"
+    },
+    {
+      "scheme": "tbls",
+      "curve": "bls12-381",
+      "n": 10,
+      "t": 6,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 84.19619844062254,
+        "keygen_median_ms": 80.13587500317954,
+        "keygen_std_ms": 11.166244707535899,
+        "keygen_p95_ms": 99.53054200013867,
+        "partial_sign_mean_ms": 1090.0276233596378,
+        "partial_sign_median_ms": 1070.2059589966666,
+        "partial_sign_std_ms": 83.67289181798698,
+        "partial_sign_p95_ms": 1139.3339579954045,
+        "aggregate_mean_ms": 1719.79760508053,
+        "aggregate_median_ms": 1699.5895000000019,
+        "aggregate_std_ms": 82.0088823108013,
+        "aggregate_p95_ms": 1803.5434999983408,
+        "verify_mean_ms": 1558.3893649594393,
+        "verify_median_ms": 1556.6867499946966,
+        "verify_std_ms": 20.162601595974518,
+        "verify_p95_ms": 1588.0112500017276
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 384,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 4459.31,
+        "avg_crypto_time_ms": 4459.31,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 6.0,
+        "bandwidth_inflation_factor": 0.3,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245081"
+    },
+    {
+      "scheme": "tbls",
+      "curve": "bls12-381",
+      "n": 20,
+      "t": 11,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 141.0366366407834,
+        "keygen_median_ms": 136.87991600454552,
+        "keygen_std_ms": 10.466814998176625,
+        "keygen_p95_ms": 165.44224999961443,
+        "partial_sign_mean_ms": 1988.374851520639,
+        "partial_sign_median_ms": 1978.2382080011303,
+        "partial_sign_std_ms": 43.44394849711491,
+        "partial_sign_p95_ms": 2082.0181669987505,
+        "aggregate_mean_ms": 1808.9731465591467,
+        "aggregate_median_ms": 1808.279290999053,
+        "aggregate_std_ms": 21.271434494400182,
+        "aggregate_p95_ms": 1844.2443329986418,
+        "verify_mean_ms": 1560.496303359978,
+        "verify_median_ms": 1558.0184170030407,
+        "verify_std_ms": 27.746109960970752,
+        "verify_p95_ms": 1635.2607090011588
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 384,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 5495.46,
+        "avg_crypto_time_ms": 5495.46,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 11.0,
+        "bandwidth_inflation_factor": 0.28,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245083"
+    },
+    {
+      "scheme": "musig2",
+      "curve": "secp256k1",
+      "n": 3,
+      "t": 3,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 9.016478440607898,
+        "keygen_median_ms": 8.896792001905851,
+        "keygen_std_ms": 0.5365658784613105,
+        "keygen_p95_ms": 9.096374997170642,
+        "nonce_gen_mean_ms": 8.817868400656153,
+        "nonce_gen_median_ms": 8.811916995909996,
+        "nonce_gen_std_ms": 0.04507991182804659,
+        "nonce_gen_p95_ms": 8.895375001884531,
+        "presign_mean_ms": 30.905243280285504,
+        "presign_median_ms": 30.874583004333545,
+        "presign_std_ms": 0.20385096025083282,
+        "presign_p95_ms": 31.402708998939488,
+        "partial_sign_mean_ms": 0.026981681294273585,
+        "partial_sign_median_ms": 0.027250003768131137,
+        "partial_sign_std_ms": 0.0076881723212217775,
+        "partial_sign_p95_ms": 0.036416997318156064,
+        "aggregate_mean_ms": 0.006588280666619539,
+        "aggregate_median_ms": 0.006499998562503606,
+        "aggregate_std_ms": 0.0011141480441145524,
+        "aggregate_p95_ms": 0.00875000114319846,
+        "verify_mean_ms": 3.202124960371293,
+        "verify_median_ms": 3.190666000591591,
+        "verify_std_ms": 0.03366020446688556,
+        "verify_p95_ms": 3.2623750012135133
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 65,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 51.85,
+        "avg_crypto_time_ms": 51.85,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 3.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245085"
+    },
+    {
+      "scheme": "musig2",
+      "curve": "secp256k1",
+      "n": 5,
+      "t": 5,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 14.962798359629232,
+        "keygen_median_ms": 14.840999996522442,
+        "keygen_std_ms": 0.6581949744910495,
+        "keygen_p95_ms": 14.901250004186295,
+        "nonce_gen_mean_ms": 14.88828327972442,
+        "nonce_gen_median_ms": 14.683250003145076,
+        "nonce_gen_std_ms": 0.9530325869357814,
+        "nonce_gen_p95_ms": 14.987208000093233,
+        "presign_mean_ms": 87.07841339986771,
+        "presign_median_ms": 85.68404199468205,
+        "presign_std_ms": 4.4474573852463,
+        "presign_p95_ms": 99.43912499875296,
+        "partial_sign_mean_ms": 0.039818359655328095,
+        "partial_sign_median_ms": 0.04133399488637224,
+        "partial_sign_std_ms": 0.007429578125238319,
+        "partial_sign_p95_ms": 0.046458000724669546,
+        "aggregate_mean_ms": 0.008728360116947442,
+        "aggregate_median_ms": 0.008582996088080108,
+        "aggregate_std_ms": 0.0009780669832109262,
+        "aggregate_p95_ms": 0.010334006219636649,
+        "verify_mean_ms": 3.258951641328167,
+        "verify_median_ms": 3.2033330062404275,
+        "verify_std_ms": 0.24111121627224677,
+        "verify_p95_ms": 3.3212079943041317
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 65,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 119.49,
+        "avg_crypto_time_ms": 119.49,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 5.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245086"
+    },
+    {
+      "scheme": "musig2",
+      "curve": "secp256k1",
+      "n": 10,
+      "t": 10,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 29.993853320775088,
+        "keygen_median_ms": 29.63179200014565,
+        "keygen_std_ms": 1.6831191205608933,
+        "keygen_p95_ms": 30.565082997782156,
+        "nonce_gen_mean_ms": 29.490081679541618,
+        "nonce_gen_median_ms": 29.308958000910934,
+        "nonce_gen_std_ms": 0.7966002722294678,
+        "nonce_gen_p95_ms": 29.593708000902552,
+        "presign_mean_ms": 346.43851508008083,
+        "presign_median_ms": 342.57924999837996,
+        "presign_std_ms": 7.35799239155091,
+        "presign_p95_ms": 361.4359169951058,
+        "partial_sign_mean_ms": 0.06990496040089056,
+        "partial_sign_median_ms": 0.07091699808370322,
+        "partial_sign_std_ms": 0.012949307452167502,
+        "partial_sign_p95_ms": 0.08745800005272031,
+        "aggregate_mean_ms": 0.00974663911620155,
+        "aggregate_median_ms": 0.01020800118567422,
+        "aggregate_std_ms": 0.0012996754321525983,
+        "aggregate_p95_ms": 0.011458992958068848,
+        "verify_mean_ms": 3.2368116808356717,
+        "verify_median_ms": 3.1984579982236028,
+        "verify_std_ms": 0.14292822977619943,
+        "verify_p95_ms": 3.598625000449829
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 65,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 409.62,
+        "avg_crypto_time_ms": 409.62,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 10.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245087"
+    },
+    {
+      "scheme": "musig2",
+      "curve": "secp256k1",
+      "n": 20,
+      "t": 20,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 59.6523065600195,
+        "keygen_median_ms": 59.21191699599149,
+        "keygen_std_ms": 2.1898931379917963,
+        "keygen_p95_ms": 59.45983300625812,
+        "nonce_gen_mean_ms": 59.13120504003018,
+        "nonce_gen_median_ms": 58.63554200186627,
+        "nonce_gen_std_ms": 1.6191704294856586,
+        "nonce_gen_p95_ms": 60.98924999969313,
+        "presign_mean_ms": 1386.6086465204717,
+        "presign_median_ms": 1385.8655830044881,
+        "presign_std_ms": 14.880656584614867,
+        "presign_p95_ms": 1404.2521660012426,
+        "partial_sign_mean_ms": 0.12780335964635015,
+        "partial_sign_median_ms": 0.12954200064996257,
+        "partial_sign_std_ms": 0.02010903171362265,
+        "partial_sign_p95_ms": 0.155916997755412,
+        "aggregate_mean_ms": 0.011618199932854623,
+        "aggregate_median_ms": 0.011333002476021647,
+        "aggregate_std_ms": 0.0024325346932602358,
+        "aggregate_p95_ms": 0.012834003427997231,
+        "verify_mean_ms": 3.200951719773002,
+        "verify_median_ms": 3.1981669962988235,
+        "verify_std_ms": 0.022768505524183788,
+        "verify_p95_ms": 3.247374996135477
+      },
+      "memory": {
+        "keygen_mean_mb": 46.0625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 65,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 1510.79,
+        "avg_crypto_time_ms": 1510.79,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 20.0,
+        "bandwidth_inflation_factor": 0.5,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase1_baseline_feldman",
+      "timestamp": "2026-04-23T23:34:42.245089"
+    }
+  ]
+}
