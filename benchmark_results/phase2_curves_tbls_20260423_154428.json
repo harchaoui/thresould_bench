@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "start_time": "2026-04-23T15:32:43.591000",
+    "version": "2.0",
+    "phases_completed": [
+      "phase0_theoretical",
+      "phase1_baseline"
+    ]
+  },
+  "results": [
+    {
+      "scheme": "tbls",
+      "curve": "bls12-381",
+      "n": 10,
+      "t": 6,
+      "network_mode": "none",
+      "packet_loss_rate": 0.0,
+      "timing": {
+        "keygen_mean_ms": 51.56284991884604,
+        "keygen_median_ms": 49.916707997908816,
+        "keygen_std_ms": 3.3840985100050984,
+        "keygen_p95_ms": 60.32608299574349,
+        "partial_sign_mean_ms": 665.1953715601121,
+        "partial_sign_median_ms": 662.0044160008547,
+        "partial_sign_std_ms": 13.645816748308556,
+        "partial_sign_p95_ms": 693.483709001157,
+        "aggregate_mean_ms": 1055.5460600406514,
+        "aggregate_median_ms": 1055.1369169988902,
+        "aggregate_std_ms": 14.167590738803291,
+        "aggregate_p95_ms": 1076.5788330027135,
+        "verify_mean_ms": 969.8661150009139,
+        "verify_median_ms": 963.8503329988453,
+        "verify_std_ms": 26.10470595908868,
+        "verify_p95_ms": 988.3178330055671
+      },
+      "memory": {
+        "keygen_mean_mb": 45.890625
+      },
+      "communication": {},
+      "signatures": {
+        "final_sig_avg_size_bytes": 384,
+        "final_sig_avg_verify_ms": 0.0
+      },
+      "stress_metrics": {
+        "avg_total_time_ms": 2745.84,
+        "avg_crypto_time_ms": 2745.84,
+        "avg_network_overhead_ms": 0.0,
+        "avg_retries_per_iter": 0.0,
+        "avg_messages_per_iter": 6.0,
+        "bandwidth_inflation_factor": 0.3,
+        "completion_rate": 1.0,
+        "successful_iterations": 20,
+        "total_iterations": 20
+      },
+      "phase": "phase2_curves_tbls",
+      "timestamp": "2026-04-23T15:44:28.670566"
+    }
+  ]
+}
