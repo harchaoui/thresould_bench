@@ -1,10 +1,15 @@
 ```
-# Python
+# Python compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
+
+# Output directories
+output/
+```
+=======
 # Logs and temp files
 *.log
 *.tmp
@@ -22,3 +27,4 @@ __pycache__/
 output/
 .DS_Store
 output/
+

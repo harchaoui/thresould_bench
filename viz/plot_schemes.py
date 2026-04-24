@@ -556,6 +556,1151 @@ class SchemeComparator:
         
         return None
     
+    def plot_compatibility_matrix(self, figsize: Tuple[int, int] = (14, 6),
+                                   save: bool = True) -> str:
+        """
+        GROUP A: Compatibility matrix heatmaps.
+        
+        Two side-by-side heatmaps:
+        - Left: Scheme × Curve compatibility
+        - Right: Scheme × DKG compatibility
+        
+        Colors: green=valid, yellow=suboptimal, red=invalid
+        """
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Color mapping
+        color_map = {'valid': '#4CAF50', 'suboptimal': '#FFC107', 'invalid': '#F44336'}
+        
+        # === Left: Scheme × Curve ===
+        schemes = ['srts', 'frost', 'musig2', 'tbls']
+        curves = ['secp256k1', 'bls12-381', 'ristretto255']
+        
+        curve_matrix = np.zeros((len(schemes), len(curves)), dtype=int)
+        curve_labels = np.empty((len(schemes), len(curves)), dtype=object)
+        
+        for i, scheme in enumerate(schemes):
+            for j, curve in enumerate(curves):
+                status = COMPATIBILITY['curve'].get((scheme, curve), 'invalid')
+                curve_matrix[i, j] = {'valid': 2, 'suboptimal': 1, 'invalid': 0}[status]
+                curve_labels[i, j] = status
+        
+        im1 = axes[0].imshow(curve_matrix, cmap='RdYlGn', vmin=0, vmax=2, aspect='auto')
+        axes[0].set_xticks(range(len(curves)))
+        axes[0].set_yticks(range(len(schemes)))
+        axes[0].set_xticklabels(curves, fontsize=11)
+        axes[0].set_yticklabels([s.upper() for s in schemes], fontsize=11)
+        axes[0].set_xlabel('Curve', fontsize=12, fontweight='bold')
+        axes[0].set_ylabel('Scheme', fontsize=12, fontweight='bold')
+        axes[0].set_title('Scheme × Curve Compatibility', fontsize=14, fontweight='bold')
+        
+        # Add text labels
+        for i in range(len(schemes)):
+            for j in range(len(curves)):
+                text_color = 'white' if curve_matrix[i, j] == 0 else 'black'
+                axes[0].text(j, i, curve_labels[i, j].upper(), ha='center', va='center',
+                            fontsize=10, fontweight='bold', color=text_color)
+        
+        # === Right: Scheme × DKG ===
+        dkg_types = ['feldman_vss', 'pedersen_dkg', 'not_applicable']
+        
+        dkg_matrix = np.zeros((len(schemes), len(dkg_types)), dtype=int)
+        dkg_labels = np.empty((len(schemes), len(dkg_types)), dtype=object)
+        
+        for i, scheme in enumerate(schemes):
+            for j, dkg in enumerate(dkg_types):
+                status = COMPATIBILITY['dkg'].get((scheme, dkg), 'invalid')
+                dkg_matrix[i, j] = {'valid': 2, 'suboptimal': 1, 'invalid': 0}[status]
+                dkg_labels[i, j] = status
+        
+        im2 = axes[1].imshow(dkg_matrix, cmap='RdYlGn', vmin=0, vmax=2, aspect='auto')
+        axes[1].set_xticks(range(len(dkg_types)))
+        axes[1].set_yticks(range(len(schemes)))
+        axes[1].set_xticklabels(['Feldman VSS', 'Pedersen DKG', 'N/A'], fontsize=11, rotation=45, ha='right')
+        axes[1].set_yticklabels([s.upper() for s in schemes], fontsize=11)
+        axes[1].set_xlabel('DKG Type', fontsize=12, fontweight='bold')
+        axes[1].set_ylabel('Scheme', fontsize=12, fontweight='bold')
+        axes[1].set_title('Scheme × DKG Compatibility', fontsize=14, fontweight='bold')
+        
+        # Add text labels
+        for i in range(len(schemes)):
+            for j in range(len(dkg_types)):
+                text_color = 'white' if dkg_matrix[i, j] == 0 else 'black'
+                axes[1].text(j, i, dkg_labels[i, j].upper(), ha='center', va='center',
+                            fontsize=10, fontweight='bold', color=text_color)
+        
+        # Add colorbar
+        cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+        cbar = fig.colorbar(im2, cax=cbar_ax)
+        cbar.set_ticks([0, 1, 2])
+        cbar.set_ticklabels(['Invalid', 'Suboptimal', 'Valid'])
+        cbar.set_label('Compatibility Status', fontsize=12)
+        
+        plt.tight_layout(rect=[0, 0, 0.9, 1])
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"compatibility_matrix_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"compatibility_matrix_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_ops_per_second(self, df: pd.DataFrame,
+                            figsize: Tuple[int, int] = (14, 9),
+                            save: bool = True) -> str:
+        """
+        GROUP A: Operations per second vs n per scheme+curve.
+        
+        Shows throughput capacity. Higher is better.
+        Skips invalid scheme+curve combinations.
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        grouped = df.groupby(['scheme', 'curve'])
+        
+        has_musig2 = False
+        tbls_invalid_curves = set()
+        
+        for (scheme, curve), group in grouped:
+            if 'ops_per_second' not in group.columns:
+                continue
+            
+            # Skip invalid scheme+curve combinations
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
+            label = f"{scheme.upper()} ({curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            if scheme.lower() == 'musig2':
+                has_musig2 = True
+                marker = 'x'
+            
+            group = group.sort_values('n')
+            
+            ax.plot(group['n'], group['ops_per_second'],
+                   marker=marker, linewidth=2.5, markersize=10,
+                   label=label, color=color, alpha=0.8)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Operations per Second', fontsize=14, fontweight='bold')
+        ax.set_title('Throughput Capacity by Scheme and Curve\\n(Higher is better)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=11, loc='upper right', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        n_values = sorted(df['n'].unique())
+        ax.set_xticks(n_values)
+        
+        # Add MuSig2 footnote if present
+        if has_musig2:
+            self._annotate_musig2(ax)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02,
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"ops_per_second_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"ops_per_second_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_overhead_percentage(self, df: pd.DataFrame,
+                                  figsize: Tuple[int, int] = (14, 9),
+                                  save: bool = True) -> str:
+        """
+        GROUP A: Overhead percentage vs n per scheme+curve.
+        
+        Shows what fraction of total time is network overhead.
+        Lower is better.
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        if 'overhead_percentage' not in df.columns:
+            print("⚠ overhead_percentage column not available")
+            return None
+        
+        grouped = df.groupby(['scheme', 'curve'])
+        
+        has_musig2 = False
+        tbls_invalid_curves = set()
+        
+        for (scheme, curve), group in grouped:
+            # Skip invalid scheme+curve combinations
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
+            label = f"{scheme.upper()} ({curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            if scheme.lower() == 'musig2':
+                has_musig2 = True
+                marker = 'x'
+            
+            group = group.sort_values('n')
+            
+            ax.plot(group['n'], group['overhead_percentage'],
+                   marker=marker, linewidth=2.5, markersize=10,
+                   label=label, color=color, alpha=0.8)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Network Overhead (%)', fontsize=14, fontweight='bold')
+        ax.set_title('Network Overhead as Percentage of Total Time\\n(Lower is better)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=11, loc='upper right', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        n_values = sorted(df['n'].unique())
+        ax.set_xticks(n_values)
+        
+        # Add MuSig2 footnote if present
+        if has_musig2:
+            self._annotate_musig2(ax)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02,
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"overhead_percentage_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"overhead_percentage_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_efficiency_score(self, df: pd.DataFrame,
+                               figsize: Tuple[int, int] = (14, 9),
+                               save: bool = True) -> str:
+        """
+        GROUP A: Bar chart of efficiency_score per scheme+curve.
+        
+        Lower efficiency score is better (less slowdown under stress).
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        if 'efficiency_score' not in df.columns:
+            print("⚠ efficiency_score column not available")
+            return None
+        
+        # Aggregate by scheme+curve
+        agg_df = df.groupby(['scheme', 'curve'])['efficiency_score'].mean().reset_index()
+        
+        # Filter out invalid combinations
+        valid_rows = []
+        tbls_invalid_curves = set()
+        
+        for _, row in agg_df.iterrows():
+            scheme = row['scheme']
+            curve = row['curve']
+            
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
+            valid_rows.append(row)
+        
+        if not valid_rows:
+            print("⚠ No valid data for efficiency score plot")
+            return None
+        
+        valid_df = pd.DataFrame(valid_rows)
+        
+        # Create bar positions
+        x_pos = range(len(valid_df))
+        colors = [self.SCHEME_COLORS.get(row['scheme'], '#333333') for _, row in valid_df.iterrows()]
+        labels = [f"{row['scheme'].upper()} ({row['curve']})" for _, row in valid_df.iterrows()]
+        
+        bars = ax.bar(x_pos, valid_df['efficiency_score'], color=colors, alpha=0.8, edgecolor='black')
+        
+        ax.set_xlabel('Scheme (Curve)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Efficiency Score', fontsize=14, fontweight='bold')
+        ax.set_title('Scheme Efficiency Comparison\\n(Lower score = less degradation under stress)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=11)
+        ax.grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels on bars
+        for i, (idx, row) in enumerate(valid_df.iterrows()):
+            ax.text(i, row['efficiency_score'] + 0.5, f"{row['efficiency_score']:.2f}",
+                   ha='center', va='bottom', fontsize=10)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02,
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"efficiency_score_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"efficiency_score_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_threshold_sensitivity(self, df: pd.DataFrame,
+                                    n_fixed: int = 20,
+                                    figsize: Tuple[int, int] = (14, 9),
+                                    save: bool = True) -> str:
+        """
+        GROUP A: Signing time vs t/n ratio at fixed n.
+        
+        Only for SRTS and FROST (threshold-sensitive schemes).
+        Skips tBLS (t-independent) and MuSig2 (t always equals n).
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Filter to fixed n
+        plot_df = df[df['n'] == n_fixed].copy()
+        
+        if len(plot_df) == 0:
+            print(f"⚠ No data for n={n_fixed}")
+            return None
+        
+        # Calculate t/n ratio
+        plot_df['t_ratio'] = plot_df['t'] / plot_df['n']
+        
+        # Filter to only SRTS and FROST
+        plot_df = plot_df[plot_df['scheme'].isin(['srts', 'frost'])]
+        
+        if len(plot_df) == 0:
+            print("⚠ No threshold-sensitive schemes (SRTS/FROST) found")
+            return None
+        
+        grouped = plot_df.groupby(['scheme', 'curve'])
+        
+        for (scheme, curve), group in grouped:
+            if self._skip_if_invalid(scheme, curve):
+                continue
+            
+            if 'sign_ms' not in group.columns:
+                continue
+            
+            label = f"{scheme.upper()} ({curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            group = group.sort_values('t_ratio')
+            
+            ax.plot(group['t_ratio'], group['sign_ms'],
+                   marker=marker, linewidth=2.5, markersize=10,
+                   label=label, color=color, alpha=0.8)
+        
+        ax.set_xlabel('Threshold Ratio (t/n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Signing Time (ms)', fontsize=14, fontweight='bold')
+        ax.set_title(f'Threshold Sensitivity Analysis (n={n_fixed})\\n(How signing cost varies with threshold)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=11, loc='upper left', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        ax.text(0.02, 0.98, "Note: tBLS is t-independent (flat)\nMuSig2 is n-of-n only (t/n=1)",
+               transform=ax.transAxes, ha='left', va='top',
+               fontsize=10, style='italic', color='#555555',
+               bbox=dict(boxstyle='round', facecolor='white', edgecolor='#555555', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"threshold_sensitivity_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"threshold_sensitivity_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_slowdown_vs_n(self, df: pd.DataFrame,
+                            figsize: Tuple[int, int] = (14, 9),
+                            save: bool = True) -> str:
+        """
+        GROUP A: Slowdown percentage vs n at each fixed loss rate.
+        
+        Shows which schemes degrade faster as swarm grows under stress.
+        Does not split by DKG type.
+        """
+        if 'slowdown_percentage' not in df.columns:
+            print("⚠ slowdown_percentage column not available")
+            return None
+        
+        # Get unique loss rates
+        loss_rates = sorted(df['loss_rate'].unique())
+        
+        if len(loss_rates) == 0:
+            print("⚠ No loss rate data available")
+            return None
+        
+        # Create subplot for each loss rate
+        n_cols = 2
+        n_rows = (len(loss_rates) + n_cols - 1) // n_cols
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 6 * n_rows))
+        axes = axes.flatten() if n_rows > 1 else [axes] if isinstance(axes, np.ndarray) else [axes]
+        
+        for idx, loss_rate in enumerate(loss_rates):
+            if idx >= len(axes):
+                break
+            
+            ax = axes[idx]
+            loss_df = df[df['loss_rate'] == loss_rate].copy()
+            
+            grouped = loss_df.groupby(['scheme', 'curve'])
+            
+            has_musig2 = False
+            tbls_invalid_curves = set()
+            
+            for (scheme, curve), group in grouped:
+                if self._skip_if_invalid(scheme, curve):
+                    if scheme.lower() == 'tbls':
+                        tbls_invalid_curves.add(curve)
+                    continue
+                
+                if 'slowdown_percentage' not in group.columns:
+                    continue
+                
+                label = f"{scheme.upper()} ({curve})"
+                color = self.SCHEME_COLORS.get(scheme, '#333333')
+                marker = self.CURVE_MARKERS.get(curve, 'o')
+                
+                if scheme.lower() == 'musig2':
+                    has_musig2 = True
+                    marker = 'x'
+                
+                group = group.sort_values('n')
+                
+                ax.plot(group['n'], group['slowdown_percentage'],
+                       marker=marker, linewidth=2, markersize=8,
+                       label=label, color=color, alpha=0.8)
+            
+            ax.set_xlabel('Number of Participants (n)', fontsize=12, fontweight='bold')
+            ax.set_ylabel('Slowdown (%)', fontsize=12, fontweight='bold')
+            ax.set_title(f'Loss Rate = {loss_rate*100:.0f}%', fontsize=13, fontweight='bold')
+            ax.legend(fontsize=9, loc='upper left', framealpha=0.9)
+            ax.grid(True, alpha=0.3)
+            
+            n_values = sorted(loss_df['n'].unique())
+            ax.set_xticks(n_values)
+            
+            # Add MuSig2 footnote if present
+            if has_musig2:
+                ax.text(0.5, -0.25, "× MuSig2 is n-of-n only",
+                       transform=ax.transAxes, ha='center', fontsize=9,
+                       style='italic', color='#555555')
+        
+        # Hide unused subplots
+        for idx in range(len(loss_rates), len(axes)):
+            axes[idx].set_visible(False)
+        
+        fig.suptitle('Slowdown vs Swarm Size Under Network Stress',
+                    fontsize=16, fontweight='bold', y=1.02)
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"slowdown_vs_n_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"slowdown_vs_n_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_signing_latency_shaded(self, df: pd.DataFrame,
+                                     figsize: Tuple[int, int] = (14, 9),
+                                     save: bool = True) -> str:
+        """
+        GROUP A: One line per scheme at 0% loss with shaded band to 5% loss.
+        
+        Shows degradation envelope from best case (0%) to moderate stress (5%).
+        Does not split by DKG type.
+        """
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Get data at 0% and 5% loss
+        loss_0 = df[df['loss_rate'] == 0.0]
+        loss_5 = df[df['loss_rate'] == 0.05]
+        
+        if len(loss_0) == 0 or len(loss_5) == 0:
+            print("⚠ Need both 0% and 5% loss rate data")
+            return None
+        
+        # Group by scheme+curve
+        schemes_curves = set(loss_0.groupby(['scheme', 'curve']).groups.keys())
+        
+        has_musig2 = False
+        tbls_invalid_curves = set()
+        
+        for scheme, curve in schemes_curves:
+            if self._skip_if_invalid(scheme, curve):
+                if scheme.lower() == 'tbls':
+                    tbls_invalid_curves.add(curve)
+                continue
+            
+            group_0 = loss_0[(loss_0['scheme'] == scheme) & (loss_0['curve'] == curve)]
+            group_5 = loss_5[(loss_5['scheme'] == scheme) & (loss_5['curve'] == curve)]
+            
+            if 'sign_ms' not in group_0.columns or 'sign_ms' not in group_5.columns:
+                continue
+            
+            # Merge on n to get matching points
+            merged = pd.merge(
+                group_0[['n', 'sign_ms']].rename(columns={'sign_ms': 'sign_0'}),
+                group_5[['n', 'sign_ms']].rename(columns={'sign_ms': 'sign_5'}),
+                on='n', how='inner'
+            )
+            
+            if len(merged) == 0:
+                continue
+            
+            merged = merged.sort_values('n')
+            
+            label = f"{scheme.upper()} ({curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            if scheme.lower() == 'musig2':
+                has_musig2 = True
+                marker = 'x'
+            
+            # Plot main line (0% loss)
+            ax.plot(merged['n'], merged['sign_0'],
+                   marker=marker, linewidth=2.5, markersize=10,
+                   label=label, color=color, alpha=0.9)
+            
+            # Plot shaded area between 0% and 5%
+            ax.fill_between(merged['n'], merged['sign_0'], merged['sign_5'],
+                           alpha=0.2, color=color, label=None)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Signing Time (ms)', fontsize=14, fontweight='bold')
+        ax.set_title('Signing Latency Degradation Envelope\\n(Solid: 0% loss, Shaded: up to 5% loss)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=11, loc='upper left', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        n_values = sorted(df['n'].unique())
+        ax.set_xticks(n_values)
+        
+        # Add MuSig2 footnote if present
+        if has_musig2:
+            self._annotate_musig2(ax)
+        
+        # Annotate tBLS invalid curves
+        if tbls_invalid_curves:
+            ax.text(0.98, 0.02,
+                    f"N/A for tBLS + {', '.join(sorted(tbls_invalid_curves))}",
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=10, style='italic', color='#C73E1D',
+                    bbox=dict(boxstyle='round', facecolor='white', edgecolor='#C73E1D', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"signing_latency_shaded_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"signing_latency_shaded_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_signing_latency_grid(self, df: pd.DataFrame,
+                                   figsize: Tuple[int, int] = (18, 12),
+                                   save: bool = True) -> str:
+        """
+        GROUP A: Subplot grid of signing latency.
+        
+        Rows = loss rate (0, 1, 2, 5%)
+        Cols = curve (secp256k1, bls12-381, ristretto255)
+        All schemes per cell, grey-out invalid combinations.
+        Does not split by DKG type.
+        """
+        loss_rates = sorted(df['loss_rate'].unique())
+        curves = ['secp256k1', 'bls12-381', 'ristretto255']
+        
+        # Filter to common loss rates for the grid
+        target_losses = [0.0, 0.01, 0.02, 0.05]
+        loss_rates = [lr for lr in loss_rates if lr in target_losses]
+        
+        if len(loss_rates) == 0:
+            print("⚠ No matching loss rate data")
+            return None
+        
+        n_rows = len(loss_rates)
+        n_cols = len(curves)
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize, sharex=True, sharey=True)
+        
+        if n_rows == 1:
+            axes = axes.reshape(1, -1)
+        if n_cols == 1:
+            axes = axes.reshape(-1, 1)
+        
+        for row_idx, loss_rate in enumerate(loss_rates):
+            for col_idx, curve in enumerate(curves):
+                ax = axes[row_idx][col_idx]
+                
+                loss_df = df[(df['loss_rate'] == loss_rate) & (df['curve'] == curve)]
+                
+                if len(loss_df) == 0:
+                    ax.text(0.5, 0.5, 'No Data', transform=ax.transAxes,
+                           ha='center', va='center', fontsize=14, color='#999999')
+                    ax.set_facecolor('#f5f5f5')
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    continue
+                
+                grouped = loss_df.groupby(['scheme', 'curve'])
+                
+                has_data = False
+                for (scheme, c), group in grouped:
+                    if self._skip_if_invalid(scheme, curve):
+                        # Grey out invalid combinations
+                        continue
+                    
+                    if 'sign_ms' not in group.columns:
+                        continue
+                    
+                    has_data = True
+                    label = f"{scheme.upper()}"
+                    color = self.SCHEME_COLORS.get(scheme, '#333333')
+                    marker = self.CURVE_MARKERS.get(curve, 'o')
+                    
+                    if scheme.lower() == 'musig2':
+                        marker = 'x'
+                    
+                    group = group.sort_values('n')
+                    
+                    ax.plot(group['n'], group['sign_ms'],
+                           marker=marker, linewidth=2, markersize=8,
+                           label=label, color=color, alpha=0.8)
+                
+                if not has_data:
+                    ax.text(0.5, 0.5, 'Invalid\nCombination', transform=ax.transAxes,
+                           ha='center', va='center', fontsize=12, color='#999999')
+                    ax.set_facecolor('#f5f5f5')
+                
+                # Set titles and labels
+                if row_idx == 0:
+                    ax.set_title(curve, fontsize=12, fontweight='bold')
+                if col_idx == 0:
+                    ax.set_ylabel(f'{loss_rate*100:.0f}% Loss', fontsize=11, fontweight='bold')
+                
+                ax.grid(True, alpha=0.3)
+                ax.set_xticks(sorted(loss_df['n'].unique()))
+        
+        # Add common labels
+        fig.text(0.5, 0.02, 'Number of Participants (n)', ha='center', fontsize=14, fontweight='bold')
+        fig.text(0.02, 0.5, 'Signing Time (ms)', va='center', rotation='vertical', fontsize=14, fontweight='bold')
+        fig.suptitle('Signing Latency Across Loss Rates and Curves',
+                    fontsize=16, fontweight='bold', y=0.995)
+        
+        # Add legend
+        handles = [plt.Line2D([0], [0], marker='o', color='w',
+                             markerfacecolor=self.SCHEME_COLORS.get(scheme, '#333'),
+                             markersize=10, label=scheme.upper())
+                  for scheme in ['srts', 'frost', 'musig2', 'tbls']]
+        fig.legend(handles=handles, loc='upper center', bbox_to_anchor=(0.5, 0.98),
+                  ncol=4, fontsize=11)
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"signing_latency_grid_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"signing_latency_grid_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def _get_dkg_type_from_phase(self, phase: str) -> str:
+        """
+        Extract DKG type from _phase column value.
+        """
+        phase_lower = phase.lower()
+        if 'pedersen' in phase_lower:
+            return 'pedersen_dkg'
+        elif 'feldman' in phase_lower:
+            return 'feldman_vss'
+        return 'not_applicable'
+    
+    def plot_dkg_keygen_vs_n(self, df: pd.DataFrame,
+                              figsize: Tuple[int, int] = (14, 9),
+                              save: bool = True) -> str:
+        """
+        GROUP B: KeyGen time vs n, split by (scheme + curve + dkg_type).
+        
+        One subplot per curve so curve effect is visible.
+        Only valid combinations per COMPATIBILITY.
+        """
+        if '_phase' not in df.columns:
+            print("⚠ _phase column not available for DKG analysis")
+            return None
+        
+        curves = df['curve'].unique()
+        n_curves = len(curves)
+        
+        if n_curves == 0:
+            print("⚠ No curve data available")
+            return None
+        
+        fig, axes = plt.subplots(1, n_curves, figsize=(6 * n_curves, 8), sharey=True)
+        if n_curves == 1:
+            axes = [axes]
+        
+        for col_idx, curve in enumerate(sorted(curves)):
+            ax = axes[col_idx]
+            curve_df = df[df['curve'] == curve].copy()
+            curve_df['dkg_type'] = curve_df['_phase'].apply(self._get_dkg_type_from_phase)
+            
+            grouped = curve_df.groupby(['scheme', 'dkg_type'])
+            
+            for (scheme, dkg_type), group in grouped:
+                if self._skip_if_invalid(scheme, curve, dkg_type):
+                    continue
+                
+                if 'keygen_ms' not in group.columns:
+                    continue
+                
+                label = f"{scheme.upper()} ({dkg_type.replace('_', ' ').title()})"
+                color = self.SCHEME_COLORS.get(scheme, '#333333')
+                
+                # Different linestyles for DKG types
+                linestyle = '-' if dkg_type == 'feldman_vss' else '--'
+                
+                group = group.sort_values('n')
+                
+                ax.plot(group['n'], group['keygen_ms'],
+                       marker='o', linewidth=2.5, markersize=8,
+                       label=label, color=color, linestyle=linestyle, alpha=0.8)
+            
+            ax.set_xlabel('Number of Participants (n)', fontsize=12, fontweight='bold')
+            ax.set_title(curve, fontsize=13, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.set_xticks(sorted(curve_df['n'].unique()))
+        
+        axes[0].set_ylabel('Key Generation Time (ms)', fontsize=14, fontweight='bold')
+        fig.suptitle('DKG Key Generation Time by Curve and DKG Type\\n(Solid: Feldman VSS, Dashed: Pedersen DKG)',
+                    fontsize=16, fontweight='bold', y=1.02)
+        
+        # Add legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles=handles, loc='upper center', bbox_to_anchor=(0.5, 0.98),
+                  ncol=4, fontsize=11)
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"dkg_keygen_vs_n_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"dkg_keygen_vs_n_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_dkg_keygen_vs_loss(self, df: pd.DataFrame,
+                                 figsize: Tuple[int, int] = (14, 9),
+                                 save: bool = True) -> str:
+        """
+        GROUP B: KeyGen time vs loss_rate, split by (scheme + dkg_type).
+        
+        Pedersen has more rounds so degrades faster under packet loss.
+        Only valid combinations per COMPATIBILITY.
+        """
+        if '_phase' not in df.columns:
+            print("⚠ _phase column not available for DKG analysis")
+            return None
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        df_copy = df.copy()
+        df_copy['dkg_type'] = df_copy['_phase'].apply(self._get_dkg_type_from_phase)
+        
+        # Group by scheme and dkg_type (aggregate across curves)
+        grouped = df_copy.groupby(['scheme', 'dkg_type', 'loss_rate'])
+        
+        # Aggregate keygen_ms by mean
+        agg_df = grouped['keygen_ms'].mean().reset_index()
+        
+        schemes_dkg = set(zip(agg_df['scheme'], agg_df['dkg_type']))
+        
+        for scheme, dkg_type in schemes_dkg:
+            subset = agg_df[(agg_df['scheme'] == scheme) & (agg_df['dkg_type'] == dkg_type)]
+            
+            # Check validity for any curve (we aggregate across curves)
+            # Use first available curve for validation
+            curves_in_subset = df_copy[(df_copy['scheme'] == scheme) & 
+                                        (df_copy['dkg_type'] == dkg_type)]['curve'].unique()
+            
+            if len(curves_in_subset) == 0:
+                continue
+            
+            # Check if at least one curve is valid
+            is_valid = any(not self._skip_if_invalid(scheme, c, dkg_type) for c in curves_in_subset)
+            if not is_valid:
+                continue
+            
+            label = f"{scheme.upper()} ({dkg_type.replace('_', ' ').title()})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            linestyle = '-' if dkg_type == 'feldman_vss' else '--'
+            
+            subset = subset.sort_values('loss_rate')
+            
+            ax.plot(subset['loss_rate'] * 100, subset['keygen_ms'],
+                   marker='o', linewidth=2.5, markersize=8,
+                   label=label, color=color, linestyle=linestyle, alpha=0.8)
+        
+        ax.set_xlabel('Packet Loss Rate (%)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Key Generation Time (ms)', fontsize=14, fontweight='bold')
+        ax.set_title('DKG Performance Under Network Stress\\n(Solid: Feldman VSS, Dashed: Pedersen DKG)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=11, loc='upper left', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"dkg_keygen_vs_loss_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"dkg_keygen_vs_loss_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_dkg_overhead_vs_n(self, df: pd.DataFrame,
+                                figsize: Tuple[int, int] = (14, 9),
+                                save: bool = True) -> str:
+        """
+        GROUP B: Network overhead during keygen vs n, split by (scheme + dkg_type).
+        
+        Shows O(n²) message complexity difference between Feldman and Pedersen.
+        Only valid combinations per COMPATIBILITY.
+        """
+        if '_phase' not in df.columns:
+            print("⚠ _phase column not available for DKG analysis")
+            return None
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        df_copy = df.copy()
+        df_copy['dkg_type'] = df_copy['_phase'].apply(self._get_dkg_type_from_phase)
+        
+        grouped = df_copy.groupby(['scheme', 'dkg_type', 'curve'])
+        
+        for (scheme, dkg_type, curve), group in grouped:
+            if self._skip_if_invalid(scheme, curve, dkg_type):
+                continue
+            
+            if 'network_overhead_ms' not in group.columns:
+                continue
+            
+            label = f"{scheme.upper()} ({dkg_type.replace('_', ' ').title()}, {curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            linestyle = '-' if dkg_type == 'feldman_vss' else '--'
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            group = group.sort_values('n')
+            
+            ax.plot(group['n'], group['network_overhead_ms'],
+                   marker=marker, linewidth=2, markersize=8,
+                   label=label, color=color, linestyle=linestyle, alpha=0.7)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Network Overhead During KeyGen (ms)', fontsize=14, fontweight='bold')
+        ax.set_title('DKG Network Communication Overhead\\n(Solid: Feldman VSS, Dashed: Pedersen DKG)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=9, loc='upper left', framealpha=0.9, ncol=2)
+        ax.grid(True, alpha=0.3)
+        
+        n_values = sorted(df['n'].unique())
+        ax.set_xticks(n_values)
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"dkg_overhead_vs_n_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"dkg_overhead_vs_n_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_dkg_pedersen_overhead_cost(self, df: pd.DataFrame,
+                                         figsize: Tuple[int, int] = (14, 9),
+                                         save: bool = True) -> str:
+        """
+        GROUP B: Pedersen overhead cost percentage.
+        
+        (pedersen_keygen_ms - feldman_keygen_ms) / feldman_keygen_ms * 100 vs n
+        Per valid scheme+curve combination.
+        
+        This is the key number for the paper: how much extra does stronger
+        Pedersen security cost in practice?
+        """
+        if '_phase' not in df.columns:
+            print("⚠ _phase column not available for DKG analysis")
+            return None
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        df_copy = df.copy()
+        df_copy['dkg_type'] = df_copy['_phase'].apply(self._get_dkg_type_from_phase)
+        
+        # Separate Feldman and Pedersen data
+        feldman_df = df_copy[df_copy['dkg_type'] == 'feldman_vss']
+        pedersen_df = df_copy[df_copy['dkg_type'] == 'pedersen_dkg']
+        
+        # Get unique scheme+curve combinations that have both
+        feldman_groups = set(feldman_df.groupby(['scheme', 'curve']).groups.keys())
+        pedersen_groups = set(pedersen_df.groupby(['scheme', 'curve']).groups.keys())
+        common_groups = feldman_groups & pedersen_groups
+        
+        if len(common_groups) == 0:
+            print("⚠ No scheme+curve combinations with both Feldman and Pedersen data")
+            return None
+        
+        for scheme, curve in common_groups:
+            if self._skip_if_invalid(scheme, curve, 'pedersen_dkg'):
+                continue
+            
+            feldman_subset = feldman_df[(feldman_df['scheme'] == scheme) & 
+                                        (feldman_df['curve'] == curve)]
+            pedersen_subset = pedersen_df[(pedersen_df['scheme'] == scheme) & 
+                                          (pedersen_df['curve'] == curve)]
+            
+            # Aggregate by n
+            feldman_avg = feldman_subset.groupby('n')['keygen_ms'].mean()
+            pedersen_avg = pedersen_subset.groupby('n')['keygen_ms'].mean()
+            
+            # Find common n values
+            common_n = set(feldman_avg.index) & set(pedersen_avg.index)
+            
+            if len(common_n) == 0:
+                continue
+            
+            common_n = sorted(common_n)
+            
+            # Calculate overhead percentage
+            overhead_pct = []
+            for n_val in common_n:
+                f_val = feldman_avg[n_val]
+                p_val = pedersen_avg[n_val]
+                if f_val > 0:
+                    overhead_pct.append((p_val - f_val) / f_val * 100)
+                else:
+                    overhead_pct.append(0)
+            
+            label = f"{scheme.upper()} ({curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            
+            ax.plot(common_n, overhead_pct,
+                   marker='o', linewidth=2.5, markersize=10,
+                   label=label, color=color, alpha=0.8)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Pedersen Overhead (%)', fontsize=14, fontweight='bold')
+        ax.set_title('Security Premium: Pedersen DKG vs Feldman VSS\\n(Positive = Pedersen costs more)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.axhline(y=0, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+        ax.legend(fontsize=11, loc='upper left', framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"dkg_pedersen_overhead_cost_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"dkg_pedersen_overhead_cost_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+    
+    def plot_dkg_keygen_amortization(self, df: pd.DataFrame,
+                                      figsize: Tuple[int, int] = (14, 9),
+                                      save: bool = True) -> str:
+        """
+        GROUP B: KeyGen/Sign ratio vs n, split by dkg_type.
+        
+        Shows how many signatures needed before DKG cost amortizes.
+        Whether choosing Pedersen over Feldman shifts the break-even point.
+        Only valid scheme+curve combinations.
+        """
+        if '_phase' not in df.columns:
+            print("⚠ _phase column not available for DKG analysis")
+            return None
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        df_copy = df.copy()
+        df_copy['dkg_type'] = df_copy['_phase'].apply(self._get_dkg_type_from_phase)
+        
+        # Filter to rows with both keygen_ms and sign_ms
+        df_copy = df_copy.dropna(subset=['keygen_ms', 'sign_ms'])
+        
+        # Calculate ratio
+        df_copy['keygen_sign_ratio'] = df_copy['keygen_ms'] / df_copy['sign_ms']
+        
+        grouped = df_copy.groupby(['scheme', 'dkg_type', 'curve'])
+        
+        for (scheme, dkg_type, curve), group in grouped:
+            if self._skip_if_invalid(scheme, curve, dkg_type):
+                continue
+            
+            label = f"{scheme.upper()} ({dkg_type.replace('_', ' ').title()}, {curve})"
+            color = self.SCHEME_COLORS.get(scheme, '#333333')
+            linestyle = '-' if dkg_type == 'feldman_vss' else '--'
+            marker = self.CURVE_MARKERS.get(curve, 'o')
+            
+            group = group.sort_values('n')
+            
+            ax.plot(group['n'], group['keygen_sign_ratio'],
+                   marker=marker, linewidth=2, markersize=8,
+                   label=label, color=color, linestyle=linestyle, alpha=0.7)
+        
+        ax.set_xlabel('Number of Participants (n)', fontsize=14, fontweight='bold')
+        ax.set_ylabel('KeyGen/Sign Time Ratio', fontsize=14, fontweight='bold')
+        ax.set_title('DKG Cost Amortization Analysis\\n(Ratio = how many signs to pay back DKG cost)',
+                    fontsize=16, fontweight='bold', pad=20)
+        
+        ax.legend(fontsize=9, loc='upper left', framealpha=0.9, ncol=2)
+        ax.grid(True, alpha=0.3)
+        
+        n_values = sorted(df['n'].unique())
+        ax.set_xticks(n_values)
+        
+        plt.tight_layout()
+        
+        if save:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"dkg_keygen_amortization_{timestamp}.png"
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            print(f"✓ Saved: {output_path}")
+            
+            pdf_path = self.output_dir / f"dkg_keygen_amortization_{timestamp}.pdf"
+            plt.savefig(pdf_path, bbox_inches='tight')
+            print(f"✓ Saved: {pdf_path}")
+            
+            plt.close()
+            return str(output_path)
+        
+        return None
+
     def generate_all_scheme_plots(self, df: pd.DataFrame) -> List[str]:
         """Generate all Category 1 (Scheme Comparison) plots including GROUP A and GROUP B."""
         plots = []
