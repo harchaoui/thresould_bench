@@ -92,11 +92,43 @@ class BenchmarkDataLoader:
         else:
             results = []
         
-        # Add metadata to each result
+        # Add metadata to each result and flatten nested dicts
         for result in results:
             result['_phase'] = phase_name
             result['_source_file'] = filename
             result['_load_time'] = datetime.now().isoformat()
+            
+            # Flatten timing dict: timing.keygen_mean_ms -> keygen_ms
+            if 'timing' in result and isinstance(result['timing'], dict):
+                timing = result['timing']
+                # Map timing fields to standard column names
+                if 'keygen_mean_ms' in timing:
+                    result['keygen_ms'] = timing['keygen_mean_ms']
+                if 'verify_mean_ms' in timing:
+                    result['verify_ms'] = timing['verify_mean_ms']
+                # Compute sign_ms from presign + partial_sign + aggregate
+                sign_components = []
+                if 'presign_mean_ms' in timing:
+                    sign_components.append(timing['presign_mean_ms'])
+                if 'partial_sign_mean_ms' in timing:
+                    sign_components.append(timing['partial_sign_mean_ms'])
+                if 'aggregate_mean_ms' in timing:
+                    sign_components.append(timing['aggregate_mean_ms'])
+                if sign_components:
+                    result['sign_ms'] = sum(sign_components)
+            
+            # Flatten stress_metrics dict
+            if 'stress_metrics' in result and isinstance(result['stress_metrics'], dict):
+                stress = result['stress_metrics']
+                if 'avg_network_overhead_ms' in stress:
+                    result['network_overhead_ms'] = stress['avg_network_overhead_ms']
+                if 'avg_total_time_ms' in stress:
+                    result['total_time_ms'] = stress['avg_total_time_ms']
+            
+            # Use packet_loss_rate for loss_rate (remove packet_loss_rate to avoid duplicates)
+            if 'packet_loss_rate' in result:
+                result['loss_rate'] = result['packet_loss_rate']
+                result.pop('packet_loss_rate', None)
         
         return results
     
@@ -105,41 +137,30 @@ class BenchmarkDataLoader:
         # Map various column name formats to standard names
         column_mapping = {
             # Key generation time
-            'keygen_ms': 'keygen_ms',
             'timing_keygen_mean_ms': 'keygen_ms',
             'KeyGen (ms)': 'keygen_ms',
             
             # Signing time
-            'sign_ms': 'sign_ms',
             'timing_online_sign_mean_ms': 'sign_ms',
             'Sign (ms)': 'sign_ms',
             
             # Verification time
-            'verify_ms': 'verify_ms',
             'timing_verify_mean_ms': 'verify_ms',
             'Verify (ms)': 'verify_ms',
             
             # Network overhead
-            'network_overhead_ms': 'network_overhead_ms',
             'stress_metrics_avg_network_overhead_ms': 'network_overhead_ms',
             'Network Overhead (ms)': 'network_overhead_ms',
             
             # Packet loss rate
-            'loss_rate': 'loss_rate',
             'packet_loss_rate': 'loss_rate',
             'Loss Rate': 'loss_rate',
             
             # Participant count
-            'n': 'n',
             'num_participants': 'n',
             
             # Threshold
-            't': 't',
             'threshold': 't',
-            
-            # Scheme and curve
-            'scheme': 'scheme',
-            'curve': 'curve',
         }
         
         # Rename columns where possible
@@ -150,9 +171,19 @@ class BenchmarkDataLoader:
         
         df = df.rename(columns=rename_dict)
         
-        # Ensure required columns exist
+        # Drop duplicate columns that may have been created during flattening
+        # Keep only the first occurrence of each required column
         required_cols = ['scheme', 'curve', 'n', 't', 'loss_rate', 
                         'keygen_ms', 'sign_ms', 'verify_ms', 'network_overhead_ms']
+        
+        # Remove duplicate columns by keeping the first occurrence
+        seen = set()
+        cols_to_keep = []
+        for col in df.columns:
+            if col not in seen:
+                cols_to_keep.append(col)
+                seen.add(col)
+        df = df[cols_to_keep]
         
         for col in required_cols:
             if col not in df.columns:
