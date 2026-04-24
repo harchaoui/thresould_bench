@@ -5,4 +5,5 @@ __pycache__/
 
 # Visualization output files
 viz_output/
-```
+```__pycache__/
+*.pyc
