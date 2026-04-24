@@ -1,3 +1,13 @@
+```python
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
 # Logs and temp files
 *.log
 *.tmp
@@ -11,20 +21,25 @@
 # Editors
 .vscode/
 .idea/
-```.DS_Store
-output/
-.DS_Store
-output/
 
+# Coverage
+.coverage
+coverage/
+htmlcov/
 
-# Compiled Python files
-*.pyc
-__pycache__/
+# Python specific
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
 
-# Visualization output files
-viz_output/
-```__pycache__/
-*.pyc
-__pycache__/
-*.pyc
+# Build directories
+dist/
+build/
+*.egg
 
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+```
