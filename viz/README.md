@@ -7,7 +7,7 @@ Comprehensive visualization system for threshold signature scheme benchmarks.
 ```bash
 # Run the full visualization pipeline
 cd code4/threshold_bench
-python -m viz -r benchmark_results -o output
+python3 -m viz -r benchmark_results -o output
 ```
 
 ## Features
@@ -38,7 +38,7 @@ python -m viz -r benchmark_results -o output
 
 ## Usage Examples
 
-### Python API
+### python3 API
 
 ```python
 from viz import VisualizationPipeline, load_benchmark_data
@@ -60,13 +60,13 @@ print(f"Generated {len(results['plots'])} plots")
 
 ```bash
 # Basic usage
-python -m viz -r benchmark_results -o output
+python3 -m viz -r benchmark_results -o output
 
 # Skip certain plot types
-python -m viz --no-network-plots
+python3 -m viz --no-network-plots
 
 # Custom directories
-python -m viz -r /path/to/results -o /path/to/output
+python3 -m viz -r /path/to/results -o /path/to/output
 ```
 
 ## Output Structure
@@ -100,7 +100,7 @@ scipy >= 1.10.0
 ## Installation
 
 ```bash
-pip install matplotlib seaborn pandas numpy scipy
+pip3 install matplotlib seaborn pandas numpy scipy
 ```
 
 ## Architecture
